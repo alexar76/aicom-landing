@@ -117,34 +117,52 @@ function rateLimitExceeded(ip) {
 }
 
 /**
+ * Host header may include a port (e.g. `example.com:443`); Origin often omits default ports.
+ * Compare hostnames only so same-origin checks still pass behind strict proxies.
+ * @param {string} hostHeader
+ */
+function hostHeaderToHostname(hostHeader) {
+  const raw = hostHeader.trim().split(",")[0].trim();
+  if (!raw) return "";
+  try {
+    return new URL(`http://${raw}`).hostname.toLowerCase();
+  } catch {
+    return raw.toLowerCase();
+  }
+}
+
+/**
+ * @param {string} urlStr
+ */
+function urlToHostname(urlStr) {
+  try {
+    const u = new URL(urlStr);
+    if (u.protocol !== "http:" && u.protocol !== "https:") return "";
+    return u.hostname.toLowerCase();
+  } catch {
+    return "";
+  }
+}
+
+/**
  * Same-origin guard for POST /api/generate (CSRF).
  * @param {import("node:http").IncomingMessage} req
  */
 function isAllowedSameOrigin(req) {
   const hostHdr = req.headers.host;
   if (!hostHdr || typeof hostHdr !== "string") return false;
-  const expectedHost = hostHdr.trim().toLowerCase();
+  const expectedHostname = hostHeaderToHostname(hostHdr);
 
   const origin = req.headers.origin;
   if (origin && typeof origin === "string") {
-    try {
-      const u = new URL(origin);
-      if (u.protocol !== "http:" && u.protocol !== "https:") return false;
-      return u.host.toLowerCase() === expectedHost;
-    } catch {
-      return false;
-    }
+    const oh = urlToHostname(origin);
+    if (oh) return oh === expectedHostname;
   }
 
   const referer = req.headers.referer;
   if (referer && typeof referer === "string") {
-    try {
-      const u = new URL(referer);
-      if (u.protocol !== "http:" && u.protocol !== "https:") return false;
-      return u.host.toLowerCase() === expectedHost;
-    } catch {
-      return false;
-    }
+    const rh = urlToHostname(referer);
+    if (rh) return rh === expectedHostname;
   }
 
   return false;

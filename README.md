@@ -6,7 +6,7 @@ A fast, self-hosted page generator in the **[AI-Factory](https://magic-ai-factor
 
 | | **AI landing generator** | **[AI-Factory](https://magic-ai-factory.com/)** |
 |---|-------------------|------------------|
-| **Time** | ~30–60 s | >30 min |
+| **Time** | ~30–120 s | >30 min |
 | **Output** | One `index.html` (+ optional ZIP) | Full product + gates |
 | **Best for** | Landing hypothesis, marketing experiments | Production software |
 
@@ -118,10 +118,10 @@ The badge is **injected after generation** (`lib/badgeConfig.mjs`), not left to 
 | Concern | Mitigation |
 |--------|------------|
 | Preview / ZIP payload | Session IDs are unguessable + TTL; CSP on preview; iframe sandbox isolates the parent UI |
-| CSRF on `POST /api/generate` | `Origin` / `Referer` must match `Host` |
+| CSRF on `POST /api/generate` | `Origin` / `Referer` hostname must match `Host` hostname (default ports like `:443` / `:80` ignored so TLS proxies work) |
 | Abuse / cost | Optional rate limit: `AICOM_LANDING_RATE_LIMIT` (default **20** POSTs per IP per **15** min; `0` disables) |
 
-Programmatic `POST /api/generate` from non-browser tools must send `Origin` or `Referer` matching the server `Host` (e.g. `-H "Origin: http://127.0.0.1:3847"`).
+Programmatic `POST /api/generate` from non-browser tools must send `Origin` or `Referer` whose **hostname** matches the request `Host` hostname (e.g. `-H "Origin: http://127.0.0.1:3847"`).
 
 ---
 
