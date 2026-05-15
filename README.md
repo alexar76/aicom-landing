@@ -1,4 +1,4 @@
-# aicom landing
+# AI landing generator
 
 **MIT · one prompt → one self-contained HTML landing in ~30–60 seconds.**
 
