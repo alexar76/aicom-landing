@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="en" data-ui-locale="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title data-i18n="pageTitle">aicom landing — instant page lab</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg0: #050508;
+      --bg1: #0c0c12;
+      --line: rgba(255, 255, 255, 0.09);
+      --line2: rgba(255, 255, 255, 0.14);
+      --text: #f1f5f9;
+      --muted: #94a3b8;
+      --muted2: #64748b;
+      --accent: #818cf8;
+      --accent2: #c084fc;
+      --accent3: #f472b6;
+      --glow: rgba(129, 140, 248, 0.45);
+      --danger: #fb7185;
+      --radius: 16px;
+      --radius-sm: 10px;
+      --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+      --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html { height: 100%; scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      min-height: 100%;
+      font-family: "Outfit", system-ui, sans-serif;
+      font-weight: 400;
+      color: var(--text);
+      background: var(--bg0);
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Ambient orbs */
+    .ambient {
+      position: fixed;
+      inset: -30%;
+      z-index: 0;
+      background:
+        radial-gradient(ellipse 42% 38% at 15% 20%, rgba(129, 140, 248, 0.22), transparent 60%),
+        radial-gradient(ellipse 38% 36% at 85% 15%, rgba(192, 132, 252, 0.18), transparent 58%),
+        radial-gradient(ellipse 45% 40% at 70% 85%, rgba(244, 114, 182, 0.12), transparent 55%),
+        radial-gradient(ellipse 30% 28% at 10% 80%, rgba(56, 189, 248, 0.1), transparent 50%);
+      filter: blur(56px);
+      animation: ambient-float 22s ease-in-out infinite alternate;
+      pointer-events: none;
+    }
+    @keyframes ambient-float {
+      0% { transform: translate(0, 0) scale(1); opacity: 1; }
+      100% { transform: translate(3%, -2%) scale(1.06); opacity: 0.92; }
+    }
+
+    .grid {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      background-image:
+        linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+      background-size: 48px 48px;
+      mask-image: radial-gradient(ellipse 75% 70% at 50% 35%, black 15%, transparent 70%);
+      pointer-events: none;
+      animation: grid-fade 8s ease-in-out infinite alternate;
+    }
+    @keyframes grid-fade {
+      0% { opacity: 0.35; }
+      100% { opacity: 0.55; }
+    }
+
+    #dust {
+      position: fixed;
+      inset: 0;
+      z-index: 1;
+      pointer-events: none;
+      overflow: hidden;
+    }
+    .dust-dot {
+      position: absolute;
+      width: 3px;
+      height: 3px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.35);
+      box-shadow: 0 0 12px rgba(129, 140, 248, 0.35);
+      opacity: 0;
+      animation: dust-rise 10s ease-in-out infinite;
+    }
+    @keyframes dust-rise {
+      0%, 100% { opacity: 0; transform: translateY(8px) scale(0.6); }
+      20% { opacity: 0.7; }
+      50% { opacity: 0.35; transform: translateY(-18vh) scale(1); }
+    }
+
+    .shell {
+      position: relative;
+      z-index: 2;
+      max-width: 880px;
+      margin: 0 auto;
+      padding: clamp(1.25rem, 4vw, 2.25rem) clamp(1rem, 3vw, 1.5rem) 2.5rem;
+    }
+
+    /* Top bar */
+    .top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-bottom: clamp(1.5rem, 4vw, 2.25rem);
+      animation: rise-in 0.9s var(--ease-out) both;
+    }
+    @keyframes rise-in {
+      from { opacity: 0; transform: translateY(16px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+    }
+    .brand-mark {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      box-shadow: 0 0 24px var(--glow), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+      position: relative;
+      animation: mark-pulse 4s ease-in-out infinite;
+    }
+    @keyframes mark-pulse {
+      0%, 100% { filter: brightness(1); }
+      50% { filter: brightness(1.12); }
+    }
+    .brand-mark::after {
+      content: "";
+      position: absolute;
+      inset: 8px;
+      border-radius: 5px;
+      border: 2px solid rgba(255, 255, 255, 0.35);
+      opacity: 0.6;
+    }
+    .brand h1 {
+      font-size: 1.05rem;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      margin: 0;
+      line-height: 1.2;
+    }
+    .brand span {
+      display: block;
+      font-size: 0.72rem;
+      font-weight: 400;
+      color: var(--muted2);
+      letter-spacing: 0.02em;
+    }
+    .pill {
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 0.65rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--muted);
+      border: 1px solid var(--line);
+      padding: 0.35rem 0.65rem;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.03);
+      backdrop-filter: blur(10px);
+      white-space: nowrap;
+    }
+
+    /* Hero */
+    .hero {
+      margin-bottom: 1.5rem;
+      animation: rise-in 0.9s var(--ease-out) 0.08s both;
+    }
+    .hero-eyebrow {
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 0.68rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.2em;
+      color: var(--accent);
+      margin: 0 0 0.5rem;
+    }
+    .hero-title {
+      font-size: clamp(1.75rem, 5vw, 2.65rem);
+      font-weight: 700;
+      letter-spacing: -0.035em;
+      line-height: 1.08;
+      margin: 0 0 0.65rem;
+      background: linear-gradient(
+        115deg,
+        #fff 0%,
+        #e2e8f0 18%,
+        var(--accent) 42%,
+        var(--accent2) 62%,
+        var(--accent3) 88%,
+        #fff 100%
+      );
+      background-size: 220% auto;
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      animation: title-flow 7s ease-in-out infinite alternate;
+    }
+    @keyframes title-flow {
+      0% { background-position: 0% center; }
+      100% { background-position: 100% center; }
+    }
+    .hero-lead {
+      font-size: 1rem;
+      font-weight: 400;
+      color: var(--muted);
+      max-width: 36rem;
+      line-height: 1.55;
+      margin: 0;
+    }
+    .hero-lead code {
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 0.82em;
+      color: var(--text);
+      background: rgba(129, 140, 248, 0.12);
+      border: 1px solid rgba(129, 140, 248, 0.25);
+      padding: 0.1em 0.35em;
+      border-radius: 6px;
+    }
+    .hero-keys {
+      margin: 0.85rem 0 0;
+      font-size: 0.8rem;
+      line-height: 1.5;
+      color: var(--muted2);
+      max-width: 36rem;
+    }
+    .hero-keys a {
+      color: var(--accent);
+      text-decoration: none;
+      border-bottom: 1px solid rgba(129, 140, 248, 0.35);
+    }
+    .hero-keys a:hover { color: #c4b5fd; }
+    .hero-keys code {
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 0.78em;
+      color: var(--muted);
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--line);
+      padding: 0.08em 0.35em;
+      border-radius: 5px;
+    }
+
+    .site-foot {
+      margin-top: 2rem;
+      padding-top: 1.25rem;
+      border-top: 1px solid var(--line);
+      font-size: 0.78rem;
+      color: var(--muted2);
+      text-align: center;
+      line-height: 1.6;
+    }
+    .site-foot a {
+      color: var(--muted);
+      text-decoration: none;
+      margin: 0 0.35rem;
+    }
+    .site-foot a:hover { color: var(--text); }
+
+    /* Glass card */
+    .card {
+      position: relative;
+      border-radius: var(--radius);
+      padding: clamp(1.1rem, 3vw, 1.5rem);
+      margin-bottom: 1.75rem;
+      background: linear-gradient(145deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0.02) 100%);
+      border: 1px solid var(--line);
+      box-shadow:
+        0 0 0 1px rgba(0, 0, 0, 0.35) inset,
+        0 24px 80px rgba(0, 0, 0, 0.45);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      animation: rise-in 0.9s var(--ease-out) 0.16s both;
+    }
+    .card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      padding: 1px;
+      background: linear-gradient(135deg, rgba(129, 140, 248, 0.35), rgba(244, 114, 182, 0.12), transparent 55%);
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
+      pointer-events: none;
+      opacity: 0.65;
+    }
+
+    .field-label {
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 0.68rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+      color: var(--muted2);
+      margin-bottom: 0.4rem;
+      display: block;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 120px;
+      resize: vertical;
+      padding: 0.85rem 1rem;
+      font-family: "Outfit", sans-serif;
+      font-size: 0.95rem;
+      line-height: 1.5;
+      color: var(--text);
+      background: rgba(5, 5, 8, 0.55);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-sm);
+      transition: border-color 0.25s var(--ease-out), box-shadow 0.25s var(--ease-out), transform 0.2s var(--ease-out);
+    }
+    textarea::placeholder { color: var(--muted2); }
+    textarea:hover { border-color: var(--line2); }
+    textarea:focus {
+      outline: none;
+      border-color: rgba(129, 140, 248, 0.55);
+      box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.18), 0 12px 40px rgba(0, 0, 0, 0.35);
+      transform: translateY(-1px);
+    }
+
+    select {
+      width: 100%;
+      margin-top: 1rem;
+      padding: 0.65rem 0.85rem;
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 0.78rem;
+      color: var(--text);
+      background: rgba(5, 5, 8, 0.55);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: border-color 0.25s var(--ease-out), box-shadow 0.25s var(--ease-out);
+    }
+    select:hover { border-color: var(--line2); }
+    select:focus {
+      outline: none;
+      border-color: rgba(129, 140, 248, 0.55);
+      box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.15);
+    }
+
+    .row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      margin-top: 1.15rem;
+      align-items: center;
+    }
+
+    .btn-primary-wrap {
+      position: relative;
+      border-radius: 999px;
+      padding: 1px;
+      background: linear-gradient(120deg, var(--accent), var(--accent2), var(--accent3), var(--accent));
+      background-size: 300% 100%;
+      animation: border-flow 5s linear infinite;
+    }
+    @keyframes border-flow {
+      0% { background-position: 0% center; }
+      100% { background-position: 200% center; }
+    }
+    body.generating .btn-primary-wrap {
+      animation-duration: 1.4s;
+    }
+
+    button#go {
+      appearance: none;
+      position: relative;
+      font-family: "Outfit", sans-serif;
+      font-size: 0.9rem;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      padding: 0.72rem 1.5rem;
+      border: none;
+      border-radius: 999px;
+      color: #fff;
+      cursor: pointer;
+      background: linear-gradient(145deg, #1e1b4b 0%, #0f172a 45%, #020617 100%);
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+      transition: transform 0.22s var(--ease-spring), box-shadow 0.22s var(--ease-out);
+    }
+    button#go::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      background: linear-gradient(105deg, transparent 30%, rgba(255, 255, 255, 0.12) 50%, transparent 70%);
+      transform: translateX(-100%);
+      transition: transform 0.6s var(--ease-out);
+    }
+    button#go:hover:not(:disabled)::before {
+      transform: translateX(100%);
+    }
+    button#go:hover:not(:disabled) {
+      transform: translateY(-2px) scale(1.02);
+      box-shadow: 0 8px 36px rgba(129, 140, 248, 0.25);
+    }
+    button#go:active:not(:disabled) {
+      transform: translateY(0) scale(0.98);
+    }
+    button#go:disabled {
+      opacity: 0.55;
+      cursor: wait;
+    }
+
+    #dl {
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 0.72rem;
+      font-weight: 500;
+      color: var(--text);
+      padding: 0.68rem 1.1rem;
+      border-radius: 999px;
+      border: 1px solid var(--line2);
+      background: rgba(255, 255, 255, 0.05);
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s, transform 0.2s var(--ease-spring);
+    }
+    #dl:hover:not(:disabled) {
+      border-color: rgba(129, 140, 248, 0.45);
+      background: rgba(129, 140, 248, 0.1);
+      transform: translateY(-1px);
+    }
+    #dl.is-downloading { opacity: 0.7; cursor: wait; pointer-events: none; }
+    #dl[hidden] { display: none !important; }
+    body.is-downloading #go { pointer-events: none; opacity: 0.65; }
+
+    .status {
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 0.72rem;
+      min-height: 1.5rem;
+      margin-top: 1rem;
+      padding: 0.55rem 0.75rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      color: var(--muted);
+      background: rgba(0, 0, 0, 0.25);
+      position: relative;
+      overflow: hidden;
+    }
+    .status.err {
+      color: #fecdd3;
+      border-color: rgba(251, 113, 133, 0.35);
+      background: rgba(127, 29, 29, 0.25);
+    }
+    .status--busy::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      bottom: 0;
+      height: 2px;
+      width: 40%;
+      background: linear-gradient(90deg, var(--accent), var(--accent3));
+      animation: status-bar 1.4s ease-in-out infinite;
+    }
+    @keyframes status-bar {
+      0% { transform: translateX(-100%); opacity: 0.4; }
+      50% { opacity: 1; }
+      100% { transform: translateX(350%); opacity: 0.4; }
+    }
+
+    /* Preview */
+    .preview-block {
+      animation: rise-in 0.9s var(--ease-out) 0.24s both;
+    }
+    .preview-head {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 0.75rem;
+      margin-bottom: 0.65rem;
+    }
+    .preview-head h2 {
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+      color: var(--muted2);
+      margin: 0;
+    }
+    .preview-head p {
+      margin: 0;
+      font-size: 0.72rem;
+      color: var(--muted2);
+      max-width: 16rem;
+      text-align: right;
+      line-height: 1.35;
+    }
+
+    .frame-chrome {
+      position: relative;
+      border-radius: var(--radius);
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.03);
+      box-shadow: 0 28px 100px rgba(0, 0, 0, 0.5);
+      overflow: hidden;
+    }
+    .frame-chrome::before {
+      content: "";
+      display: block;
+      height: 36px;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02));
+      border-bottom: 1px solid var(--line);
+    }
+    .frame-dots {
+      position: absolute;
+      top: 12px;
+      left: 14px;
+      display: flex;
+      gap: 6px;
+    }
+    .frame-dots span {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .frame-dots span:nth-child(1) { background: rgba(251, 113, 133, 0.55); }
+    .frame-dots span:nth-child(2) { background: rgba(250, 204, 21, 0.45); }
+    .frame-dots span:nth-child(3) { background: rgba(52, 211, 153, 0.45); }
+    .frame-url {
+      position: absolute;
+      top: 8px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: min(52%, 320px);
+      height: 20px;
+      border-radius: 6px;
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid var(--line);
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 0.58rem;
+      color: var(--muted2);
+      display: flex;
+      align-items: center;
+      padding: 0 0.5rem;
+      letter-spacing: 0.04em;
+    }
+    iframe {
+      display: block;
+      width: 100%;
+      min-height: 480px;
+      border: none;
+      background: #fff;
+    }
+
+    .spark {
+      position: absolute;
+      width: 3px;
+      height: 3px;
+      border-radius: 50%;
+      opacity: 0;
+      animation: twinkle 4s ease-in-out infinite;
+    }
+    @keyframes twinkle {
+      0%, 100% { opacity: 0; transform: scale(0.3); }
+      40% { opacity: 0.85; transform: scale(1); }
+      70% { opacity: 0.25; transform: scale(0.7); }
+    }
+
+    .burst {
+      position: fixed;
+      pointer-events: none;
+      z-index: 50;
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      transition: transform 0.85s var(--ease-out), opacity 0.85s var(--ease-out);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .ambient, .grid, .brand-mark, .hero-title, .btn-primary-wrap, .status--busy::after, .dust-dot, .spark {
+        animation: none !important;
+      }
+      .hero-title { background-position: 50% center; }
+      button#go::before { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="ambient" aria-hidden="true"></div>
+  <div class="grid" aria-hidden="true"></div>
+  <div id="dust" aria-hidden="true"></div>
+
+  <div class="shell">
+    <header class="top">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true"></div>
+        <div>
+          <h1>aicom landing</h1>
+          <span data-i18n="brandSub">Architect → Developer · one HTML file</span>
+        </div>
+      </div>
+      <span class="pill" data-i18n="pillLocal">local only</span>
+    </header>
+
+    <section class="hero">
+      <p class="hero-eyebrow" data-i18n="heroEyebrow">Instant lab</p>
+      <p class="hero-title" data-i18n="heroTitle">Ship a landing in one breath.</p>
+      <p class="hero-lead" data-i18n-html="heroLead"></p>
+      <p class="hero-keys" data-i18n-html="heroKeys"></p>
+    </section>
+
+    <section class="card" aria-label="Generator">
+      <label class="field-label" for="prompt" data-i18n="labelPrompt">Prompt</label>
+      <textarea id="prompt" data-i18n-placeholder="promptPlaceholder" placeholder="e.g. SaaS landing for an AI task manager built for remote teams — calm, trustworthy, dark UI…"></textarea>
+
+      <label class="field-label" for="style" data-i18n="labelStyle">Visual preset</label>
+      <select id="style">
+        <option value="" data-i18n="styleAuto">Auto — infer style from your prompt</option>
+      </select>
+
+      <div class="row">
+        <div class="btn-primary-wrap">
+          <button type="button" id="go" data-i18n="btnGenerate">Generate landing</button>
+        </div>
+      </div>
+      <p class="status" id="status"></p>
+      <div class="row" style="margin-top:0.65rem">
+        <button type="button" id="dl" hidden data-i18n="btnDownload">Download ZIP</button>
+      </div>
+    </section>
+
+    <section class="preview-block" aria-label="Preview">
+      <div class="preview-head">
+        <h2 data-i18n="previewTitle">Live preview</h2>
+        <p data-i18n="previewNote">
+          Sandboxed iframe: scripts/forms run isolated from this UI (not the parent origin).
+        </p>
+      </div>
+      <div class="frame-chrome">
+        <div class="frame-dots" aria-hidden="true"><span></span><span></span><span></span></div>
+        <div class="frame-url" aria-hidden="true">preview / canvas</div>
+        <iframe
+          id="frame"
+          data-i18n-title="frameTitle"
+          title="Generated landing preview"
+          sandbox="allow-scripts allow-forms"
+          referrerpolicy="no-referrer"
+        ></iframe>
+      </div>
+    </section>
+
+    <footer class="site-foot">
+      <a href="https://magic-ai-factory.com/" target="_blank" rel="noopener noreferrer">AI-Factory</a>
+      ·
+      <a href="https://github.com/alexar76/aicom" target="_blank" rel="noopener noreferrer">GitHub</a>
+    </footer>
+  </div>
+
+  <script>
+    (function dust() {
+      const el = document.getElementById("dust");
+      const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      const n = reduced ? 0 : 28;
+      for (let i = 0; i < n; i++) {
+        const d = document.createElement("span");
+        d.className = "dust-dot";
+        d.style.left = Math.random() * 100 + "%";
+        d.style.bottom = Math.random() * 30 + "%";
+        d.style.animationDelay = Math.random() * 8 + "s";
+        d.style.animationDuration = 8 + Math.random() * 10 + "s";
+        el.appendChild(d);
+      }
+    })();
+
+    function burst(x, y) {
+      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+      const colors = ["#818cf8", "#c084fc", "#f472b6", "#e2e8f0", "#38bdf8"];
+      for (let i = 0; i < 16; i++) {
+        const el = document.createElement("span");
+        el.className = "burst";
+        el.style.left = x + "px";
+        el.style.top = y + "px";
+        el.style.background = colors[i % colors.length];
+        const ang = (Math.PI * 2 * i) / 16 + Math.random() * 0.25;
+        const dist = 48 + Math.random() * 72;
+        el.style.transform = "translate(0,0) scale(1)";
+        el.style.opacity = "1";
+        document.body.appendChild(el);
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            el.style.transform =
+              "translate(" + Math.cos(ang) * dist + "px," + Math.sin(ang) * dist + "px) scale(0)";
+            el.style.opacity = "0";
+          });
+        });
+        setTimeout(() => el.remove(), 900);
+      }
+    }
+
+    const $ = (id) => document.getElementById(id);
+    const status = $("status");
+    const frame = $("frame");
+    const dl = $("dl");
+    const go = $("go");
+    let downloadId = null;
+    let downloading = false;
+    let uiLocale = document.documentElement.getAttribute("data-ui-locale") || "en";
+  /** @type {Record<string, string>} */
+    let i18n = {};
+
+    function t(key, vars) {
+      let s = i18n[key] || key;
+      if (vars) {
+        for (const [k, v] of Object.entries(vars)) {
+          s = s.replaceAll("{" + k + "}", String(v));
+        }
+      }
+      return s;
+    }
+
+    function applyUiStrings() {
+      document.querySelectorAll("[data-i18n]").forEach((el) => {
+        const key = el.getAttribute("data-i18n");
+        if (key && i18n[key]) el.textContent = i18n[key];
+      });
+      /** Keys allowed to render HTML from bundled locale strings only (never user input). */
+      const i18nTrustedHtmlKeys = new Set(["heroLead", "heroKeys"]);
+      document.querySelectorAll("[data-i18n-html]").forEach((el) => {
+        const key = el.getAttribute("data-i18n-html");
+        if (!key || !i18n[key]) return;
+        if (i18nTrustedHtmlKeys.has(key)) el.innerHTML = i18n[key];
+        else el.textContent = i18n[key];
+      });
+      document.querySelectorAll("[data-i18n-placeholder]").forEach((el) => {
+        const key = el.getAttribute("data-i18n-placeholder");
+        if (key && i18n[key]) el.placeholder = i18n[key];
+      });
+      document.querySelectorAll("[data-i18n-title]").forEach((el) => {
+        const key = el.getAttribute("data-i18n-title");
+        if (key && i18n[key]) el.title = i18n[key];
+      });
+      const titleEl = document.querySelector("title[data-i18n]");
+      if (titleEl && i18n.pageTitle) titleEl.textContent = i18n.pageTitle;
+    }
+
+    async function initUiLocale() {
+      const params = new URLSearchParams(location.search);
+      const q = params.has("lang") ? "?lang=" + encodeURIComponent(params.get("lang")) : "";
+      const r = await fetch("/api/config" + q);
+      const cfg = await r.json();
+      uiLocale = cfg.ui_locale || uiLocale;
+      i18n = cfg.strings || {};
+      document.documentElement.lang = uiLocale;
+      document.documentElement.setAttribute("data-ui-locale", uiLocale);
+      applyUiStrings();
+    }
+
+    async function loadPresets() {
+      const r = await fetch("/api/presets");
+      const list = await r.json();
+      const sel = $("style");
+      for (const p of list) {
+        const o = document.createElement("option");
+        o.value = p.id;
+        o.textContent = p.title + " — " + p.id;
+        sel.appendChild(o);
+      }
+    }
+    initUiLocale()
+      .then(() => loadPresets())
+      .catch(() => loadPresets().catch(() => {}));
+
+    async function downloadZip() {
+      if (!downloadId || downloading) return;
+      downloading = true;
+      document.body.classList.add("is-downloading");
+      dl.classList.add("is-downloading");
+      dl.setAttribute("aria-busy", "true");
+      const prevLabel = dl.textContent;
+      dl.textContent = t("btnDownloading");
+      try {
+        const r = await fetch("/download/" + downloadId + ".zip");
+        if (!r.ok) {
+          const errText = await r.text();
+          throw new Error(errText.trim() || "Download failed (" + r.status + ")");
+        }
+        const blob = await r.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "landing.zip";
+        a.style.display = "none";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+        status.className = "status";
+        status.textContent = t("statusZip");
+      } catch (err) {
+        status.className = "status err";
+        status.textContent = err.message || String(err);
+      } finally {
+        dl.textContent = prevLabel;
+        dl.removeAttribute("aria-busy");
+        dl.classList.remove("is-downloading");
+        document.body.classList.remove("is-downloading");
+        downloading = false;
+      }
+    }
+
+    dl.addEventListener("mousedown", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+    });
+    dl.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+      downloadZip();
+    });
+
+    $("prompt").addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        go.click();
+      }
+    });
+
+    go.addEventListener("click", async (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (downloading) return;
+      const prompt = $("prompt").value.trim();
+      if (!prompt) {
+        status.textContent = t("errPrompt");
+        status.className = "status err";
+        return;
+      }
+      if (go.disabled) return;
+      go.disabled = true;
+      downloadId = null;
+      dl.hidden = true;
+      document.body.classList.add("generating");
+      status.className = "status status--busy";
+      status.textContent = t("statusBusy");
+      frame.removeAttribute("srcdoc");
+      frame.src = "about:blank";
+
+      try {
+        const r = await fetch("/api/generate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            prompt,
+            style: $("style").value || null,
+            ui_locale: uiLocale,
+          }),
+        });
+        const data = await r.json();
+        if (!r.ok) throw new Error(data.error || r.statusText);
+        status.className = "status";
+        status.textContent = t("statusReady", {
+          seconds: data.seconds,
+          styleId: data.styleId,
+        });
+        frame.src = "/preview/" + data.id;
+        downloadId = data.id;
+        dl.hidden = false;
+        dl.focus({ preventScroll: true });
+        const rect = go.getBoundingClientRect();
+        burst(rect.left + rect.width / 2, rect.top + rect.height / 2);
+      } catch (e) {
+        status.className = "status err";
+        status.textContent = e.message || String(e);
+      } finally {
+        go.disabled = false;
+        document.body.classList.remove("generating");
+      }
+    });
+  </script>
+</body>
+</html>
