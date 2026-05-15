@@ -4,9 +4,9 @@
 
 A fast, self-hosted page generator in the **[AI-Factory](https://magic-ai-factory.com/)** ecosystem ([source: github.com/alexar76/aicom](https://github.com/alexar76/aicom)). Two LLM agents — **Architect** (structure + visual plan) → **Developer** (single HTML file) — plus **20** style presets. No admin panel, no database, no QA pipeline: ideal for MVPs, A/B copy, and “ship the landing today” workflows.
 
-| | **aicom landing** | **[AI-Factory](https://magic-ai-factory.com/)** |
+| | **AI landing generator** | **[AI-Factory](https://magic-ai-factory.com/)** |
 |---|-------------------|------------------|
-| **Time** | ~30–60 s | ~10–30 min |
+| **Time** | ~30–60 s | >30 min |
 | **Output** | One `index.html` (+ optional ZIP) | Full product + gates |
 | **Best for** | Landing hypothesis, marketing experiments | Production software |
 

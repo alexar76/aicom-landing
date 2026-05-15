@@ -8,7 +8,7 @@ import { readFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { randomBytes } from "node:crypto";
-import { generateLanding, loadPresets } from "./lib/generate.mjs";
+import { generateLanding, loadPresets, ModelOutputError } from "./lib/generate.mjs";
 import { zipOneStored } from "./lib/zipStored.mjs";
 import { loadDotEnv } from "./lib/loadEnv.mjs";
 import { getBadgeConfig } from "./lib/badgeConfig.mjs";
@@ -231,7 +231,9 @@ async function handleApiGenerate(req, res) {
     });
   } catch (e) {
     console.error("[generate]", e);
-    json(res, 500, { error: "Generation failed. Check server logs if this persists." });
+    const msg =
+      e instanceof ModelOutputError ? e.message : "Generation failed. Check server logs if this persists.";
+    json(res, 500, { error: msg });
   }
 }
 
