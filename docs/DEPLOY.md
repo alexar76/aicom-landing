@@ -48,8 +48,13 @@ Example: `https://magic-ai-factory.com/landing-page-generation/`.
 
 **B1 — Strip the prefix** (upstream sees `/`, `/api/...`):
 
+Use `^~` so this block wins over a catch-all `location /` that proxies to another app (e.g. Next.js on the same `server_name`).
+
 ```nginx
-location /landing-page-generation/ {
+location = /landing-page-generation {
+    return 302 /landing-page-generation/;
+}
+location ^~ /landing-page-generation/ {
     proxy_pass http://127.0.0.1:3847/;
     proxy_http_version 1.1;
     proxy_set_header Host $host;

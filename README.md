@@ -169,6 +169,15 @@ User prompt + style preset
 
 ---
 
+## Community
+
+- [License](LICENSE) (MIT)
+- [Code of conduct](CODE_OF_CONDUCT.md)
+- [Contributing](CONTRIBUTING.md)
+- [Security policy](SECURITY.md)
+
+---
+
 ## Repo layout
 
 ```
@@ -189,8 +198,10 @@ aicom-landing/
 └── Dockerfile
 ```
 
+See [Contributing](CONTRIBUTING.md) for how to propose changes.
+
 ---
 
 ## License
 
-MIT
+This project is released under the [MIT License](LICENSE).
