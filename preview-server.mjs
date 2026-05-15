@@ -60,7 +60,8 @@ const APP_PAGE_CSP = [
 const PREVIEW_PAGE_CSP = [
   "default-src 'none'",
   "base-uri 'none'",
-  "frame-ancestors 'none'",
+  // Allow our own generator UI (same origin) to embed; 'none' breaks Firefox in the sandbox iframe.
+  "frame-ancestors 'self'",
   "script-src 'unsafe-inline' 'unsafe-eval'",
   "style-src 'unsafe-inline'",
   "img-src * data: blob: https: http:",

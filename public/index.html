@@ -437,6 +437,24 @@
     }
     #dl.is-downloading { opacity: 0.7; cursor: wait; pointer-events: none; }
     #dl[hidden] { display: none !important; }
+    #openFull {
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 0.72rem;
+      font-weight: 500;
+      color: var(--text);
+      padding: 0.55rem 0.95rem;
+      border-radius: 999px;
+      border: 1px solid var(--line2);
+      background: rgba(255, 255, 255, 0.05);
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s, transform 0.2s var(--ease-spring);
+    }
+    #openFull:hover:not(:disabled) {
+      border-color: rgba(192, 132, 252, 0.45);
+      background: rgba(192, 132, 252, 0.1);
+      transform: translateY(-1px);
+    }
+    #openFull[hidden] { display: none !important; }
     body.is-downloading #go { pointer-events: none; opacity: 0.65; }
 
     .status {
@@ -492,13 +510,32 @@
       color: var(--muted2);
       margin: 0;
     }
-    .preview-head p {
+    .preview-head-actions {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 0.5rem;
+      max-width: 18rem;
+    }
+    .preview-head-actions p {
       margin: 0;
       font-size: 0.72rem;
       color: var(--muted2);
-      max-width: 16rem;
       text-align: right;
       line-height: 1.35;
+    }
+    @media (max-width: 720px) {
+      .preview-head {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      .preview-head-actions {
+        align-items: flex-start;
+        max-width: none;
+      }
+      .preview-head-actions p {
+        text-align: left;
+      }
     }
 
     .frame-chrome {
@@ -639,9 +676,12 @@
     <section class="preview-block" aria-label="Preview">
       <div class="preview-head">
         <h2 data-i18n="previewTitle">Live preview</h2>
-        <p data-i18n="previewNote">
-          Sandboxed iframe: scripts/forms run isolated from this UI (not the parent origin).
-        </p>
+        <div class="preview-head-actions">
+          <p data-i18n="previewNote">
+            Sandboxed iframe: scripts/forms run isolated from this UI (not the parent origin).
+          </p>
+          <button type="button" id="openFull" hidden data-i18n="btnOpenFullPage">Open full page</button>
+        </div>
       </div>
       <div class="frame-chrome">
         <div class="frame-dots" aria-hidden="true"><span></span><span></span><span></span></div>
@@ -710,6 +750,7 @@
     const status = $("status");
     const frame = $("frame");
     const dl = $("dl");
+    const openFull = $("openFull");
     const go = $("go");
     let downloadId = null;
     let downloading = false;
@@ -828,6 +869,15 @@
       downloadZip();
     });
 
+    openFull.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (!downloadId) return;
+      const url = BASE + "/preview/" + downloadId;
+      const w = window.open(url, "_blank");
+      if (w) w.opener = null;
+    });
+
     $("prompt").addEventListener("keydown", (e) => {
       if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
@@ -849,6 +899,7 @@
       go.disabled = true;
       downloadId = null;
       dl.hidden = true;
+      openFull.hidden = true;
       document.body.classList.add("generating");
       status.className = "status status--busy";
       status.textContent = t("statusBusy");
@@ -875,6 +926,7 @@
         frame.src = BASE + "/preview/" + data.id;
         downloadId = data.id;
         dl.hidden = false;
+        openFull.hidden = false;
         dl.focus({ preventScroll: true });
         const rect = go.getBoundingClientRect();
         burst(rect.left + rect.width / 2, rect.top + rect.height / 2);
