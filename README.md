@@ -10,6 +10,8 @@ A fast, self-hosted page generator in the **[AI-Factory](https://magic-ai-factor
 | **Output** | One `index.html` (+ optional ZIP) | Full product + gates |
 | **Best for** | Landing hypothesis, marketing experiments | Production software |
 
+**Hosted on [AI-Factory](https://magic-ai-factory.com/):** [generator UI](https://magic-ai-factory.com/landing-page-generation/) · `POST` [`https://magic-ai-factory.com/landing-page-generation/api/generate`](https://magic-ai-factory.com/landing-page-generation/api/generate) (JSON body; send `Origin` / `Referer` for the same host — not a GET link in the browser).
+
 ---
 
 ## Screenshots
