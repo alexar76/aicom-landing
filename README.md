@@ -106,7 +106,10 @@ Provider order (`llm/provider.js`): Anthropic → DeepSeek → OpenAI → Ollama
 | `AICOM_LANDING_BADGE_LABEL` | `Powered by AI-Factory` | Badge text |
 | `AICOM_LANDING_RATE_LIMIT` | `20` | Max `POST /api/generate` per client IP per 15 minutes (`0` = off) |
 | `AICOM_LANDING_TRUST_PROXY` | *(unset)* | Set to `true` only behind your own reverse proxy so rate limits honor `X-Forwarded-For` safely |
+| `AICOM_LANDING_BASE_PATH` | *(empty)* | Browser URL prefix when the app is not at domain root (e.g. `/landing-page-generation`). Prefer a **subdomain** instead — see [`docs/DEPLOY.md`](docs/DEPLOY.md). |
 
+
+**Production / reverse proxy:** see [`docs/DEPLOY.md`](docs/DEPLOY.md) (subdomain recommended, TLS, nginx).
 
 The badge is **injected after generation** (`lib/badgeConfig.mjs`), not left to the LLM — so URL/label stay exact.
 

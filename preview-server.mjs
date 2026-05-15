@@ -12,6 +12,7 @@ import { generateLanding, loadPresets, ModelOutputError } from "./lib/generate.m
 import { zipOneStored } from "./lib/zipStored.mjs";
 import { loadDotEnv } from "./lib/loadEnv.mjs";
 import { getBadgeConfig } from "./lib/badgeConfig.mjs";
+import { normalizeBasePath, resolveRequestPath } from "./lib/basePath.mjs";
 import {
   getDefaultUiLocale,
   getUiStrings,
@@ -23,6 +24,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = __dirname;
 loadDotEnv(ROOT);
 const PUBLIC_DIR = join(ROOT, "public");
+const BASE_PATH = normalizeBasePath(process.env.AICOM_LANDING_BASE_PATH);
 
 const TTL_MS = 2 * 60 * 60 * 1000;
 const MAX_SESSIONS = 80;
@@ -239,7 +241,7 @@ async function handleApiGenerate(req, res) {
 
 async function handleStatic(req, res) {
   const url = new URL(req.url || "/", "http://127.0.0.1");
-  const pathname = url.pathname;
+  const pathname = resolveRequestPath(url.pathname, BASE_PATH);
   if (pathname === "/api/config" && req.method === "GET") {
     const locale = resolveUiLocale(url.searchParams.get("lang"));
     json(res, 200, {
@@ -252,6 +254,10 @@ async function handleStatic(req, res) {
   if (pathname === "/" || pathname === "/index.html") {
     const locale = resolveUiLocale(url.searchParams.get("lang"));
     let html = await readFile(join(PUBLIC_DIR, "index.html"), "utf8");
+    html = html.replace(
+      /<head>/i,
+      `<head>\n  <script>window.__AICOM_BASE__=${JSON.stringify(BASE_PATH)};</script>`
+    );
     html = html.replace(/<html\s+lang="[^"]*"/, `<html lang="${locale}" data-ui-locale="${locale}"`);
     res.writeHead(200, {
       ...BASE_SECURITY_HEADERS,
@@ -281,7 +287,7 @@ function main() {
   const server = http.createServer(async (req, res) => {
     try {
       const url = new URL(req.url || "/", `http://${req.headers.host || "localhost"}`);
-      const path = url.pathname;
+      const path = resolveRequestPath(url.pathname, BASE_PATH);
 
       if (req.method === "OPTIONS") {
         res.writeHead(204, BASE_SECURITY_HEADERS);
@@ -349,7 +355,11 @@ function main() {
   server.listen(port, host, () => {
     const ui = getDefaultUiLocale();
     const badge = getBadgeConfig();
-    console.log(`aicom landing preview → http://${host}:${port}/`);
+    const baseSuffix = BASE_PATH || "/";
+    console.log(`aicom landing preview → http://${host}:${port}${baseSuffix}`);
+    if (BASE_PATH) {
+      console.log(`Base path: set AICOM_LANDING_BASE_PATH=${BASE_PATH} (reverse proxy must expose this URL prefix)`);
+    }
     console.log(`UI locale: ${ui} (set AICOM_LANDING_UI_LOCALE or ?lang=ru|es)`);
     console.log(
       badge.enabled

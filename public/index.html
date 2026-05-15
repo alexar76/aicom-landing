@@ -705,6 +705,8 @@
     }
 
     const $ = (id) => document.getElementById(id);
+    /** @type {string} Public path prefix from server (e.g. /landing-page-generation) or "". */
+    const BASE = typeof window.__AICOM_BASE__ === "string" ? window.__AICOM_BASE__ : "";
     const status = $("status");
     const frame = $("frame");
     const dl = $("dl");
@@ -753,7 +755,7 @@
     async function initUiLocale() {
       const params = new URLSearchParams(location.search);
       const q = params.has("lang") ? "?lang=" + encodeURIComponent(params.get("lang")) : "";
-      const r = await fetch("/api/config" + q);
+      const r = await fetch(BASE + "/api/config" + q);
       const cfg = await r.json();
       uiLocale = cfg.ui_locale || uiLocale;
       i18n = cfg.strings || {};
@@ -763,7 +765,7 @@
     }
 
     async function loadPresets() {
-      const r = await fetch("/api/presets");
+      const r = await fetch(BASE + "/api/presets");
       const list = await r.json();
       const sel = $("style");
       for (const p of list) {
@@ -786,7 +788,7 @@
       const prevLabel = dl.textContent;
       dl.textContent = t("btnDownloading");
       try {
-        const r = await fetch("/download/" + downloadId + ".zip");
+        const r = await fetch(BASE + "/download/" + downloadId + ".zip");
         if (!r.ok) {
           const errText = await r.text();
           throw new Error(errText.trim() || "Download failed (" + r.status + ")");
@@ -854,7 +856,7 @@
       frame.src = "about:blank";
 
       try {
-        const r = await fetch("/api/generate", {
+        const r = await fetch(BASE + "/api/generate", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -870,7 +872,7 @@
           seconds: data.seconds,
           styleId: data.styleId,
         });
-        frame.src = "/preview/" + data.id;
+        frame.src = BASE + "/preview/" + data.id;
         downloadId = data.id;
         dl.hidden = false;
         dl.focus({ preventScroll: true });
