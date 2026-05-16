@@ -795,10 +795,14 @@
 
     async function initUiLocale() {
       const params = new URLSearchParams(location.search);
-      const q = params.has("lang") ? "?lang=" + encodeURIComponent(params.get("lang")) : "";
+      const langParam = params.get("lang");
+      const q =
+        langParam && String(langParam).trim()
+          ? "?lang=" + encodeURIComponent(String(langParam).trim())
+          : "";
       const r = await fetch(BASE + "/api/config" + q);
       const cfg = await r.json();
-      uiLocale = cfg.ui_locale || uiLocale;
+      uiLocale = cfg.ui_locale || "en";
       i18n = cfg.strings || {};
       document.documentElement.lang = uiLocale;
       document.documentElement.setAttribute("data-ui-locale", uiLocale);
@@ -903,8 +907,9 @@
       document.body.classList.add("generating");
       status.className = "status status--busy";
       status.textContent = t("statusBusy");
-      frame.removeAttribute("srcdoc");
-      frame.src = "about:blank";
+        frame.removeAttribute("src");
+        frame.removeAttribute("srcdoc");
+        frame.src = "about:blank";
 
       try {
         const r = await fetch(BASE + "/api/generate", {
@@ -923,7 +928,12 @@
           seconds: data.seconds,
           styleId: data.styleId,
         });
-        frame.src = BASE + "/preview/" + data.id;
+        const previewRes = await fetch(BASE + "/preview/" + data.id);
+        if (!previewRes.ok) {
+          throw new Error("Preview failed (" + previewRes.status + "). Try Open full page.");
+        }
+        frame.removeAttribute("src");
+        frame.srcdoc = await previewRes.text();
         downloadId = data.id;
         dl.hidden = false;
         openFull.hidden = false;
@@ -932,7 +942,16 @@
         burst(rect.left + rect.width / 2, rect.top + rect.height / 2);
       } catch (e) {
         status.className = "status err";
-        status.textContent = e.message || String(e);
+        const raw = e instanceof Error ? e.message : String(e);
+        if (
+          /failed to fetch|networkerror|load failed|attempting to fetch resource|не удалось получить|no se pudo obtener/i.test(
+            raw
+          )
+        ) {
+          status.textContent = t("errGenerateNetwork");
+        } else {
+          status.textContent = raw || t("errGenerateGeneric");
+        }
       } finally {
         go.disabled = false;
         document.body.classList.remove("generating");

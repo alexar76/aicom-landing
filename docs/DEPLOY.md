@@ -74,9 +74,33 @@ Optional: add `location = /landing-page-generation { return 302 /landing-page-ge
 
 Same env vars as Node. Bind the container port to `127.0.0.1:3847` only and terminate TLS on the host proxy.
 
+**Persist API keys across container restarts:** store secrets in a **host file** `.env` next to `package.json`, not in the image and not only as inline `-e` flags. Recreating the container re-reads that file.
+
 ```bash
-docker run --rm -p 127.0.0.1:3847:3847 --env-file .env your-image
+cp .env.example .env   # edit: DEEPSEEK_API_KEY=..., AICOM_LANDING_UI_LOCALE=en, etc.
 ```
+
+### docker compose (recommended)
+
+`docker-compose.yml` mounts `env_file: .env` from the host. `docker compose restart` / `up -d` keeps the same keys until you change `.env` on disk.
+
+```bash
+docker compose up -d --build
+docker compose logs -f
+```
+
+### docker run
+
+```bash
+docker build -t aicom-landing .
+docker run -d --name aicom-landing \
+  -p 127.0.0.1:3847:3847 \
+  --env-file .env \
+  --restart unless-stopped \
+  aicom-landing
+```
+
+Do **not** bake `DEEPSEEK_API_KEY` into `Dockerfile` `ENV` — it would be lost on the next image rebuild and is unsafe in layer history.
 
 ## Checklist
 

@@ -32,7 +32,7 @@ Every landing MUST have a rich, large-scale visual atmosphere — not a plain wh
 Architect must specify in ui_experience.background_system:
 - hero_background: how the first viewport is filled (e.g. "full-bleed mesh gradient + grain", "large SVG aurora behind split hero")
 - hero_min_height: e.g. "min-height: 88vh" or "100svh" with content vertically centered
-- css_background_stack: 2–4 layered backgrounds (radial-gradient, linear-gradient, optional url() only if a known-stable Unsplash/Picsum URL fits the niche — otherwise CSS+SVG only)
+- css_background_stack: 2–4 layered backgrounds (radial-gradient, linear-gradient, mesh, grain) — CSS + SVG only unless user_brief explicitly asks for a photographic hero
 - large_svg_role: one full-width or hero-sized SVG (width 100%, height 50–100vh, position absolute, z-index behind text, pointer-events:none) OR a tiled <pattern> covering the hero
 - section_backgrounds: alternating section treatments (tinted band, subtle pattern, gradient fade) — at least 2 sections with distinct background treatment
 
@@ -45,17 +45,49 @@ Developer MUST implement:
 4. At least one additional section with its own background (not flat white) — gradient band, pattern, or soft color block.
 5. Visual weight: backgrounds should be VISIBLE and intentional (opacity 0.35–1.0 on decorative layers — not invisible 5% ghosts).
 
-SVG techniques for large art:
+SVG techniques for large art (abstract only):
 - <defs> linearGradient / radialGradient, <pattern>, <filter> (feTurbulence, feGaussianBlur), layered paths with fills.
-- Hero illustration beside copy (split layout) OR full-bleed backdrop — both are valid if large and polished.
-- Section icons: consistent 24–32px, separate from hero backdrop.
+- Flowing bands, aurora ribbons, mesh blobs, grids, noise, light pillars, soft wave dividers — full-bleed backdrop or split layout with abstract side panel.
+- Section icons: simple geometric marks (24–32px), not cartoon objects.
+
+=== ABSTRACT VISUALS ONLY (default — always apply) ===
+There is NO image model. Hero art = premium **abstract atmosphere** (CSS + inline SVG). Do NOT illustrate real-world objects.
+
+Never depict (even if user_brief mentions roses, coffee, phones, mascots, faces, bottles, animals):
+- Flowers, petals, stems, leaves, trees, products, people, animals, vehicles, devices, food, logos-as-cartoons.
+- "Mutant" clipart: disconnected oval clusters, floating shapes that vaguely resemble an object, cute blob mascots.
+
+Translate product niche into **mood + palette + motion**, not literal pictures:
+- Florist / romantic → soft pink-lilac mesh, petal-*shaped* geometric repeat pattern (tessellation), not a drawn rose.
+- Coffee / food → warm copper-cream gradients, steam-like curved ribbons, grain — not a cup silhouette.
+- SaaS / AI → aurora mesh, grid, terminal glow, glass bands — not a robot face or brain blob.
+- Fintech → obsidian + gold hairlines, chart-like abstract lines (no axes), spotlight gradients.
+
+Stylish abstract checklist (Awwwards / studio bar — aim here every time):
+- **Depth stack:** minimum 5 visible layers in hero (base color + 2 mesh gradients + grain/noise + SVG deco + headline scrim).
+- **Palette:** 5–6 hex colors tied to niche mood; reuse via :root tokens everywhere (no random one-off hex in a single rule).
+- **Abstract motif:** pick ONE family — aurora ribbons | mesh blobs | geometric tessellation | light pillars | soft waves — and repeat it in hero + at least one section divider.
+- **Split hero (preferred):** copy column 45–55% width; opposite side = 3–6 overlapping Bezier shapes or gradient bands (opacity 0.12–0.55), not a single blob.
+- **Section rhythm:** hero → styled band #2 (tinted gradient) → cards on subtle pattern → footer on darker wash; never three flat white blocks in a row.
+- **Cards / UI chrome:** glass-lite (backdrop-filter blur 10–16px), 1px hairline border rgba(255,255,255,0.08–0.18), soft shadow, hover lift 2–4px.
+- **Grain:** feTurbulence noise or film grain overlay at 3–8% opacity — makes gradients feel photographic.
+- **Type:** display font for H1 (clamp 2.5–4.5rem), generous letter-spacing on eyebrow, scrim behind text if background is busy.
+- Optional: one slow hero drift animation (18–24s); respect prefers-reduced-motion.
+
+External photos: only if user_brief **explicitly** requests a photographic hero (Unsplash). Otherwise no <img> hero and no background url() stock photos.
+
+Architect: encode the visual stack in hero_visual_plan + svg_creative_brief + css_variables (5–6 hex tokens). List 5–7 hero layers and section surfaces as prose inside hero_visual_plan (one string field — no extra nested objects). Keep JSON compact and valid.
+
+Developer: parse layer plan from hero_visual_plan and svg_creative_brief; implement full hero stack from VISUAL QUALITY rules. Map css_variables hex into :root. Never add figurative art because the brief names a product.
 
 FORBIDDEN (never ship):
 - Plain flat #fff / #f5f5f5 hero with no background system.
-- Random scribble loops / gold ovals floating in empty space.
+- Figurative clip-art (flowers, faces, products, mascots) in hero or sections.
+- Random scribble loops / gold ovals / almond / teardrop / lens flares as the main hero art.
+- Disconnected shapes pretending to be an object (e.g. red ovals above a green line "stem").
 - Stroke-only placeholder ornaments with no fill and no composition.
 - Tiny 80×80 SVG as the only "visual" on the page.
-- Broken external image URLs (404) — prefer CSS mesh + large SVG; if using a photo URL, use a well-formed https://images.unsplash.com/... or https://picsum.photos/seed/... style URL that matches the product.
+- Ugly "AI slop": single purple-cyan blob on empty white; low-effort one-ellipse heroes.
 - Generic "purple AI slop" gradient unless the brand explicitly fits.
 - Arial-only typography.
 
@@ -75,7 +107,7 @@ ${LANGUAGE_SYSTEM}
 
 ${VISUAL_QUALITY_SYSTEM}
 
-Output: single JSON object only (no markdown fences).
+Output: single JSON object only (no markdown fences). Strictly valid JSON: double-quoted keys/strings, no trailing commas, no comments, escape inner quotes as \\".
 
 Required fields:
 - content_language: BCP 47 code — detect from user_brief; if unclear use ui_locale from request (not English by default)
@@ -94,14 +126,15 @@ Required fields:
       hero_background, hero_min_height, css_background_stack (array of CSS layer strings),
       large_svg_role, section_backgrounds (array describing each major section band)
     },
-    svg_creative_brief (actionable: large hero SVG or pattern — dimensions, colors, animation),
-    hero_visual_plan (placement + subject — must include full-bleed or split hero art),
-    anti_patterns (array — include "flat hero with no background", scribble ovals, tiny sole ornament)
+    svg_creative_brief (SVG path count, gradients, blur — abstract only),
+    hero_visual_plan (one string: split layout + 5–7 ordered hero layers + section surface notes — abstract motif, no figurative subjects),
+    anti_patterns (array — figurative SVG, clipart, mutant blobs, flat white hero, single-layer gradient only)
   }
 
-Encode visual quality in ui_experience — especially background_system, svg_creative_brief, hero_visual_plan, anti_patterns.
+Encode visual quality in ui_experience — hero_visual_plan must name each hero layer; css_variables must include niche palette hex.
+Pull colors, motion, and motif language from style_preset.neural_prompt; adapt to user_brief niche (florist ≠ fintech ≠ SaaS).
 Set content_language from user_brief; if unclear use ui_locale from the request JSON. Overview and component descriptions use the same language.
-Match the style preset neural_prompt; keep visual diversity (no default dark cyan/violet glass for every product).
+Keep visual diversity (no default dark cyan/violet glass for every product).
 Static landing only — no APIs or databases.`;
 }
 
@@ -133,14 +166,27 @@ ${VISUAL_QUALITY_SYSTEM}
 === IMPLEMENTATION (system) ===
 - Valid <!DOCTYPE html>, semantic landmarks (header, main, section, footer).
 - Set <html lang="..."> from architecture.content_language (fallback: user_brief language, else ui_locale from request — not English unless ui_locale is en).
-- CSS in <head><style>; :root from architecture.ui_experience.css_variables.
+- CSS in <head><style>; :root from architecture.ui_experience.css_variables (≥6 hex tokens — no orphan one-off colors).
 - Google Fonts <link> from architecture.ui_experience.typography.
 - Vanilla JS before </body> only when needed for motion (reduced-motion safe).
 - All visible text (headlines, paragraphs, buttons, nav, footer) MUST be in content_language / user_brief language — never default to English if the user wrote in Russian or another language.
 - All sections from architecture.components; copy must match user_brief (no unrelated generic SaaS).
-- Follow architecture.ui_experience.layout, signature_moment, background_system, svg_creative_brief, hero_visual_plan.
-- Implement background_system literally: full-bleed hero layers + at least one styled section background.
-- Honor architecture.ui_experience.anti_patterns.
+- Follow layout, signature_moment, background_system, svg_creative_brief, hero_visual_plan.
+
+=== HERO VISUAL STACK (implement hero_visual_plan layers — abstract only) ===
+Ship a premium stacked hero. Typical implementation pattern:
+1. .hero { min-height: 88vh or 100svh; position:relative; overflow:hidden; background: var(--bg-hero); }
+2. .hero::before — 2–3 radial-gradient() meshes at different positions (opacity 0.35–0.65).
+3. .hero::after — film grain (inline SVG <filter id="noise"> + feTurbulence) OR subtle CSS noise overlay at 4–7% opacity.
+4. <svg class="hero-deco" aria-hidden="true"> absolute inset 0, z-index 0 — ≥4 <path> or <ellipse> with fills from <defs> linearGradient/radialGradient; vary opacity; apply feGaussianBlur on 1–2 large shapes; preserveAspectRatio="xMidYMid slice".
+5. .hero-inner { position:relative; z-index:2; max-width from layout; } + .hero-scrim or text-shadow / linear-gradient behind copy for contrast.
+6. Split layout: grid or flex — copy column + decorative column per visual_recipe.hero_layout.
+7. Section 2: different surface per visual_recipe.section_surfaces (gradient band, pattern fill, or tinted wash) — optional wave <svg> divider at hero foot.
+
+Cards: use glass-lite (backdrop-filter, hairline border, radius 12–20px). Buttons: gradient fill from palette, clear hover state.
+
+Honor anti_patterns. Do NOT add figurative clip-art. Do NOT ship a hero with only one linear-gradient.
+
 - Do NOT add any fixed "Powered by" / AI-Factory corner badge — the host injects it after generation when configured.
 
 Output: JSON only (no markdown): { "html": "<!DOCTYPE html>..." }

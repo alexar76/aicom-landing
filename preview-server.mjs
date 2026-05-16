@@ -8,7 +8,8 @@ import { readFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { randomBytes } from "node:crypto";
-import { generateLanding, loadPresets, ModelOutputError } from "./lib/generate.mjs";
+import { generateLanding, loadPresets } from "./lib/generate.mjs";
+import { UserFacingGenerationError } from "./lib/generationErrors.mjs";
 import { zipOneStored } from "./lib/zipStored.mjs";
 import { loadDotEnv } from "./lib/loadEnv.mjs";
 import { getBadgeConfig } from "./lib/badgeConfig.mjs";
@@ -253,7 +254,9 @@ async function handleApiGenerate(req, res) {
   } catch (e) {
     console.error("[generate]", e);
     const msg =
-      e instanceof ModelOutputError ? e.message : "Generation failed. Check server logs if this persists.";
+      e instanceof UserFacingGenerationError
+        ? e.message
+        : "Generation failed. Wait a moment and tap Generate again — or check server logs if this keeps happening.";
     json(res, 500, { error: msg });
   }
 }
@@ -282,6 +285,7 @@ async function handleStatic(req, res) {
       ...BASE_SECURITY_HEADERS,
       "Content-Security-Policy": APP_PAGE_CSP,
       "content-type": "text/html; charset=utf-8",
+      "cache-control": "no-store",
     });
     res.end(html);
     return;
@@ -370,6 +374,10 @@ function main() {
       res.end("Internal server error");
     }
   });
+
+  // Generation can exceed Node's default 5 min requestTimeout (Architect + Developer + retries).
+  server.requestTimeout = 0;
+  server.headersTimeout = 0;
 
   server.listen(port, host, () => {
     const ui = getDefaultUiLocale();

@@ -3,6 +3,8 @@
  * Uses global fetch (Node 18+). No npm dependencies.
  */
 
+import { LlmConnectionError } from "../lib/generationErrors.mjs";
+
 function stripCodeFence(text) {
   const t = text.trim();
   const m = t.match(/^```(?:json)?\s*([\s\S]*?)```$/i);
@@ -78,6 +80,102 @@ function describeFetchFailure(err, target) {
   return parts.join(" — ");
 }
 
+function fetchRetryLimit() {
+  const n = Number(process.env.AICOM_LANDING_FETCH_RETRIES ?? 3);
+  return Number.isFinite(n) ? Math.min(5, Math.max(1, Math.floor(n))) : 3;
+}
+
+function retryDelayMs(attempt) {
+  return Math.min(8000, 400 * 2 ** (attempt - 1));
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/** @param {number} status */
+function isRetryableHttpStatus(status) {
+  return status === 429 || status === 502 || status === 503 || status === 504;
+}
+
+/**
+ * @param {unknown} err
+ * @param {number} [httpStatus]
+ */
+export function isRetryableTransportFailure(err, httpStatus) {
+  if (httpStatus != null && isRetryableHttpStatus(httpStatus)) return true;
+  const { code, message } = rootCause(err);
+  if (
+    code === "ECONNRESET" ||
+    code === "ECONNREFUSED" ||
+    code === "ENOTFOUND" ||
+    code === "ETIMEDOUT" ||
+    code === "EAI_AGAIN" ||
+    code === "UND_ERR_CONNECT_TIMEOUT" ||
+    code === "UND_ERR_SOCKET"
+  ) {
+    return true;
+  }
+  if (message.includes("fetch failed") || message === "Failed to fetch") return true;
+  if (message.includes("other side closed") || message.includes("socket hang up")) return true;
+  if (message.includes("aborted") || message.includes("AbortError")) return true;
+  return false;
+}
+
+/**
+ * @param {string} url
+ * @param {RequestInit} init
+ * @param {{ target: string }} meta
+ */
+async function llmFetch(url, init, { target }) {
+  const max = fetchRetryLimit();
+  let lastErr = /** @type {unknown} */ (undefined);
+  let lastStatus = /** @type {number | undefined} */ (undefined);
+
+  for (let attempt = 1; attempt <= max; attempt++) {
+    try {
+      const res = await fetch(url, init);
+      if (isRetryableHttpStatus(res.status)) {
+        lastStatus = res.status;
+        if (attempt < max) {
+          console.warn(
+            `[llm] ${target}: HTTP ${res.status} (attempt ${attempt}/${max}), retrying in ${retryDelayMs(attempt)}ms…`
+          );
+          await sleep(retryDelayMs(attempt));
+          continue;
+        }
+        console.error(`[llm] ${target}: HTTP ${res.status} after ${max} attempts`);
+        throw new LlmConnectionError(
+          `The AI service was temporarily unavailable (${max} attempts). Wait a moment and tap Generate again.`
+        );
+      }
+      return res;
+    } catch (e) {
+      lastErr = e;
+      if (e instanceof LlmConnectionError) throw e;
+      if (isRetryableTransportFailure(e) && attempt < max) {
+        console.warn(
+          `[llm] ${target}: ${describeFetchFailure(e, target)} (attempt ${attempt}/${max}), retrying in ${retryDelayMs(attempt)}ms…`
+        );
+        await sleep(retryDelayMs(attempt));
+        continue;
+      }
+      console.error(`[llm] ${target}: transport failure`, e);
+      if (isRetryableTransportFailure(e, lastStatus)) {
+        throw new LlmConnectionError(
+          `Could not reach the AI provider after ${max} attempts. Check your network and API keys, then tap Generate again.`
+        );
+      }
+      throw new Error(`${target}: ${describeFetchFailure(e, target)}`);
+    }
+  }
+
+  console.error(`[llm] ${target}: transport failure after ${max} attempts`, lastErr);
+  throw new LlmConnectionError(
+    `Could not reach the AI provider after ${max} attempts. Check your network and API keys, then tap Generate again.`
+  );
+}
+
 async function anthropicComplete({ system, user, model, maxTokens, temperature, timeoutMs }) {
   const key = envKey("ANTHROPIC_API_KEY");
   if (!key) throw new Error("ANTHROPIC_API_KEY is missing or empty");
@@ -86,9 +184,9 @@ async function anthropicComplete({ system, user, model, maxTokens, temperature, 
   const id = setTimeout(() => controller.abort(), timeoutMs || 120_000);
   const target = "Anthropic api.anthropic.com";
   try {
-    let res;
-    try {
-      res = await fetch("https://api.anthropic.com/v1/messages", {
+    const res = await llmFetch(
+      "https://api.anthropic.com/v1/messages",
+      {
         method: "POST",
         signal: controller.signal,
         headers: {
@@ -103,10 +201,9 @@ async function anthropicComplete({ system, user, model, maxTokens, temperature, 
           system: system || undefined,
           messages: [{ role: "user", content: user }],
         }),
-      });
-    } catch (e) {
-      throw new Error(`${target}: ${describeFetchFailure(e, target)}`);
-    }
+      },
+      { target }
+    );
     if (!res.ok) {
       const err = await res.text();
       console.error(`[llm] Anthropic HTTP ${res.status}`, err.slice(0, 8000));
@@ -136,9 +233,9 @@ async function openaiCompatibleComplete(opts, cfg) {
   const target = `${cfg.name} ${base}`;
   const url = `${base}/chat/completions`;
   try {
-    let res;
-    try {
-      res = await fetch(url, {
+    const res = await llmFetch(
+      url,
+      {
         method: "POST",
         signal: controller.signal,
         headers: {
@@ -154,10 +251,9 @@ async function openaiCompatibleComplete(opts, cfg) {
             { role: "user", content: opts.user },
           ],
         }),
-      });
-    } catch (e) {
-      throw new Error(`${target}: ${describeFetchFailure(e, target)}`);
-    }
+      },
+      { target }
+    );
     if (!res.ok) {
       const err = await res.text();
       console.error(`[llm] ${cfg.name} HTTP ${res.status}`, err.slice(0, 8000));
@@ -203,9 +299,9 @@ async function ollamaComplete({ system, user, model, maxTokens, temperature, tim
   const id = setTimeout(() => controller.abort(), timeoutMs || 180_000);
   const target = `Ollama ${base}`;
   try {
-    let res;
-    try {
-      res = await fetch(`${base}/api/chat`, {
+    const res = await llmFetch(
+      `${base}/api/chat`,
+      {
         method: "POST",
         signal: controller.signal,
         headers: { "content-type": "application/json" },
@@ -218,10 +314,9 @@ async function ollamaComplete({ system, user, model, maxTokens, temperature, tim
             { role: "user", content: user },
           ],
         }),
-      });
-    } catch (e) {
-      throw new Error(`${target}: ${describeFetchFailure(e, target)}`);
-    }
+      },
+      { target }
+    );
     if (!res.ok) {
       const err = await res.text();
       console.error(`[llm] Ollama HTTP ${res.status}`, err.slice(0, 8000));
@@ -249,12 +344,13 @@ export async function complete(opts) {
     if (hasO) return await openaiComplete(opts);
     return await ollamaComplete(opts);
   } catch (e) {
+    if (e instanceof LlmConnectionError) throw e;
     const msg = e instanceof Error ? e.message : String(e);
     if (hasA || hasD || hasO) throw e instanceof Error ? e : new Error(msg);
 
     const hint =
       `No ANTHROPIC_API_KEY, DEEPSEEK_API_KEY, or OPENAI_API_KEY — using Ollama only (${ollamaBase}). ` +
-      `Set one cloud key in your environment (or .env next to package.json), or start Ollama and tune OLLAMA_HOST / OLLAMA_MODEL. ` +
+      `Set one cloud key in your environment (or a .env file next to package.json), or start Ollama and tune OLLAMA_HOST / OLLAMA_MODEL. ` +
       `For DeepSeek, use DEEPSEEK_API_KEY (not OPENAI_API_KEY) unless you also set OPENAI_BASE_URL to a DeepSeek-compatible endpoint. `;
     throw new Error(hint + msg);
   }

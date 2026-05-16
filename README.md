@@ -2,7 +2,12 @@
 
 **MIT · one prompt → one self-contained HTML landing in ~30–60 seconds.**
 
-A fast, self-hosted page generator in the **[AI-Factory](https://magic-ai-factory.com/)** ecosystem ([source: github.com/alexar76/aicom](https://github.com/alexar76/aicom)). Two LLM agents — **Architect** (structure + visual plan) → **Developer** (single HTML file) — plus **20** style presets. No admin panel, no database, no QA pipeline: ideal for MVPs, A/B copy, and “ship the landing today” workflows.
+> ## ▶ [Open the live generator](https://magic-ai-factory.com/landing-page-generation/)
+>
+> **Try it in the browser** — enter a prompt, pick a style, generate, preview, download `landing.zip`.  
+> Part of the **[AI-Factory](https://magic-ai-factory.com/)** ecosystem · [GitHub](https://github.com/alexar76/aicom)
+
+A fast, self-hosted page generator. Two LLM agents — **Architect** (structure + visual plan) → **Developer** (single HTML file) — plus **20** style presets. No admin panel, no database, no QA pipeline: ideal for MVPs, A/B copy, and “ship the landing today” workflows.
 
 | | **AI landing generator** | **[AI-Factory](https://magic-ai-factory.com/)** |
 |---|-------------------|------------------|
@@ -10,7 +15,7 @@ A fast, self-hosted page generator in the **[AI-Factory](https://magic-ai-factor
 | **Output** | One `index.html` (+ optional ZIP) | Full product + gates |
 | **Best for** | Landing hypothesis, marketing experiments | Production software |
 
-**Hosted on [AI-Factory](https://magic-ai-factory.com/):** [generator UI](https://magic-ai-factory.com/landing-page-generation/) · `POST` [`https://magic-ai-factory.com/landing-page-generation/api/generate`](https://magic-ai-factory.com/landing-page-generation/api/generate) (JSON body; send `Origin` / `Referer` for the same host — not a GET link in the browser).
+**API (hosted):** `POST` [`https://magic-ai-factory.com/landing-page-generation/api/generate`](https://magic-ai-factory.com/landing-page-generation/api/generate) — JSON body; send `Origin` / `Referer` for the same host (not a GET link in the browser).
 
 ---
 
@@ -27,7 +32,7 @@ npm run serve
 # → http://127.0.0.1:3847/
 ```
 
-UI languages: **en**, **ru**, **es** — set `AICOM_LANDING_UI_LOCALE` or open `?lang=ru`.
+UI languages: **en** (default), **ru**, **es** — set `AICOM_LANDING_UI_LOCALE=en` in `.env`, or open `?lang=ru` for a one-off switch. Sample prompts: [`docs/PROMPTS.md`](docs/PROMPTS.md).
 
 ---
 
@@ -92,7 +97,7 @@ npx aicom-landing "SaaS landing for an AI task manager for remote teams"
 npx aicom-landing "Green energy startup" --style sage-organic --out ./dist/page.html
 ```
 
-Provider order (`llm/provider.js`): Anthropic → DeepSeek → OpenAI → Ollama. Keys load from `.env` at startup (existing shell env vars are not overwritten).
+Provider order (`llm/provider.js`): Anthropic → DeepSeek → OpenAI → Ollama. Keys and `AICOM_LANDING_UI_LOCALE` load from `.env` at startup (`.env` overrides shell exports).
 
 ---
 
@@ -129,14 +134,18 @@ Programmatic `POST /api/generate` from non-browser tools must send `Origin` or `
 
 ## Docker
 
-Build once; pass secrets at **run** time only (never bake keys into the image).
+Build once; pass secrets at **run** time only (never bake keys into the image). Put keys in **`.env` on the host** and pass `--env-file .env` (or use Compose below) so they **survive container restart/recreate** — see [`docs/DEPLOY.md`](docs/DEPLOY.md).
 
 The image sets **`AICOM_LANDING_HOST=0.0.0.0`** so the process listens on all interfaces (unlike the default `127.0.0.1` when run with Node locally). There is **no authentication** and **no HTTPS** inside the container — expose it only on trusted networks or put **TLS + auth** (reverse proxy, VPN, etc.) in front. The process runs as a **non-root** user inside the image (`uid 1001`).
 
 ```bash
-docker build -t aicom-landing .
+cp .env.example .env   # DEEPSEEK_API_KEY, AICOM_LANDING_UI_LOCALE=en, …
 
-# Preview UI
+# Preview UI (Compose — env persists on host)
+docker compose up -d --build
+
+# Or one-off / manual
+docker build -t aicom-landing .
 docker run --rm -p 3847:3847 --env-file ./.env \
   --entrypoint node aicom-landing /app/preview-server.mjs
 
