@@ -29,6 +29,11 @@ server {
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
+        # Generation can take 2–4+ minutes (Architect + Developer). Default 60s causes
+        # browser "NetworkError when attempting to fetch resource".
+        proxy_connect_timeout 600s;
+        proxy_send_timeout 600s;
+        proxy_read_timeout 600s;
     }
 }
 ```
@@ -61,6 +66,9 @@ location ^~ /landing-page-generation/ {
     proxy_set_header X-Real-IP $remote_addr;
     proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
     proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_connect_timeout 600s;
+    proxy_send_timeout 600s;
+    proxy_read_timeout 600s;
 }
 ```
 
@@ -102,9 +110,22 @@ docker run -d --name aicom-landing \
 
 Do **not** bake `DEEPSEEK_API_KEY` into `Dockerfile` `ENV` — it would be lost on the next image rebuild and is unsafe in layer history.
 
+## Troubleshooting: `NetworkError when attempting to fetch resource`
+
+The UI calls `POST /api/generate` and waits for the full LLM pipeline (often **1–4 minutes**, sometimes longer with retries).
+
+| Symptom | Likely cause | Fix |
+|--------|----------------|-----|
+| Error after ~60s, browser shows **NetworkError** | nginx/Caddy **proxy_read_timeout** (default 60s) closed the connection | Set `proxy_read_timeout 600s;` (and `proxy_send_timeout` / `proxy_connect_timeout`) on the location that proxies to port **3847** |
+| Immediate JSON error / HTTP 500 | Missing `DEEPSEEK_API_KEY` (or other provider key) in server `.env` | Add key to host `.env`, `docker compose up -d --build` |
+| HTTP 403 | `Origin` / `Referer` hostname mismatch | Open the generator from the same host you POST to (no `www` vs bare-domain mix) |
+
+Node already sets `server.requestTimeout = 0` so the app process does not cut off long runs — the reverse proxy must match.
+
 ## Checklist
 
 - TLS in front of the app on the public internet.
+- **proxy_read_timeout ≥ 600s** on every proxy `location` to this app.
 - `AICOM_LANDING_TRUST_PROXY=true` behind your own proxy (for rate limits by real client IP).
 - API keys only in server env, not in the browser.
 - Optional: HTTP basic auth or SSO in nginx if you want to limit who can burn tokens.

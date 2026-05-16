@@ -911,6 +911,12 @@
         frame.removeAttribute("srcdoc");
         frame.src = "about:blank";
 
+      const busyT0 = Date.now();
+      const busyTick = setInterval(() => {
+        const sec = Math.floor((Date.now() - busyT0) / 1000);
+        status.textContent = t("statusBusyElapsed", { seconds: sec });
+      }, 8000);
+
       try {
         const r = await fetch(BASE + "/api/generate", {
           method: "POST",
@@ -921,8 +927,22 @@
             ui_locale: uiLocale,
           }),
         });
-        const data = await r.json();
-        if (!r.ok) throw new Error(data.error || r.statusText);
+        const ct = (r.headers.get("content-type") || "").toLowerCase();
+        let data;
+        if (ct.includes("application/json")) {
+          data = await r.json();
+        } else {
+          const text = await r.text();
+          if (r.status === 502 || r.status === 504) throw new Error("__AICOM_GATEWAY_TIMEOUT__");
+          throw new Error(text.trim().slice(0, 240) || r.statusText || "HTTP " + r.status);
+        }
+        if (!r.ok) {
+          const errMsg = data.error || r.statusText;
+          if (/API key|DEEPSEEK_API_KEY|LLM API key/i.test(errMsg)) {
+            throw new Error("__AICOM_NO_LLM__");
+          }
+          throw new Error(errMsg);
+        }
         status.className = "status";
         status.textContent = t("statusReady", {
           seconds: data.seconds,
@@ -943,7 +963,11 @@
       } catch (e) {
         status.className = "status err";
         const raw = e instanceof Error ? e.message : String(e);
-        if (
+        if (raw === "__AICOM_GATEWAY_TIMEOUT__") {
+          status.textContent = t("errGenerateTimeout");
+        } else if (raw === "__AICOM_NO_LLM__") {
+          status.textContent = t("errGenerateNoLlm");
+        } else if (
           /failed to fetch|networkerror|load failed|attempting to fetch resource|не удалось получить|no se pudo obtener/i.test(
             raw
           )
@@ -953,6 +977,7 @@
           status.textContent = raw || t("errGenerateGeneric");
         }
       } finally {
+        clearInterval(busyTick);
         go.disabled = false;
         document.body.classList.remove("generating");
       }

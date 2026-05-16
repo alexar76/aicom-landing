@@ -20,6 +20,7 @@ import {
   resolveUiLocale,
   SUPPORTED_UI_LOCALES,
 } from "./lib/uiLocale.mjs";
+import { isLlmConfigured } from "./lib/llmReady.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = __dirname;
@@ -270,6 +271,7 @@ async function handleStatic(req, res) {
       ui_locale: locale,
       supported_locales: [...SUPPORTED_UI_LOCALES],
       strings: getUiStrings(locale),
+      llm_ready: isLlmConfigured(),
     });
     return;
   }

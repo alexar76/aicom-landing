@@ -36,6 +36,8 @@ Architect must specify in ui_experience.background_system:
 - large_svg_role: one full-width or hero-sized SVG (width 100%, height 50–100vh, position absolute, z-index behind text, pointer-events:none) OR a tiled <pattern> covering the hero
 - section_backgrounds: alternating section treatments (tinted band, subtle pattern, gradient fade) — at least 2 sections with distinct background treatment
 
+Fixed / glass top nav: allowed, but it MUST sit over a full-bleed hero atmosphere (≥88vh). Never a flat body color or empty band behind the nav. Add a soft scrim (gradient or blur wash) under nav + headline if the mesh is busy.
+
 Developer MUST implement:
 1. Hero wrapper with min-height ≥ 80vh (or 100svh), position:relative, overflow:hidden.
 2. At least ONE full-bleed background layer:
@@ -89,6 +91,8 @@ FORBIDDEN (never ship):
 - Tiny 80×80 SVG as the only "visual" on the page.
 - Ugly "AI slop": single purple-cyan blob on empty white; low-effort one-ellipse heroes.
 - Generic "purple AI slop" gradient unless the brand explicitly fits.
+- Default dark purple + orange SaaS mesh for non-tech briefs (florist, food, wedding, etc.).
+- Hero with only 1–2 weak radial-gradient() layers and no grain/SVG — looks empty behind the header.
 - Arial-only typography.
 
 Motion:
