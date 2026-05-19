@@ -699,7 +699,7 @@
     <footer class="site-foot">
       <a href="https://magic-ai-factory.com/" target="_blank" rel="noopener noreferrer">AI-Factory</a>
       ·
-      <a href="https://github.com/alexar76/aicom" target="_blank" rel="noopener noreferrer">GitHub</a>
+      <a href="https://github.com/alexar76/aicom-landing" target="_blank" rel="noopener noreferrer">GitHub</a>
     </footer>
   </div>
 
@@ -807,6 +807,10 @@
       document.documentElement.lang = uiLocale;
       document.documentElement.setAttribute("data-ui-locale", uiLocale);
       applyUiStrings();
+      if (cfg.llm_ready === false) {
+        status.className = "status err";
+        status.textContent = t("errGenerateNoLlm");
+      }
     }
 
     async function loadPresets() {

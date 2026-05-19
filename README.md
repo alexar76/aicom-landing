@@ -5,7 +5,7 @@
 > ## ▶ [Open the live generator](https://magic-ai-factory.com/landing-page-generation/)
 >
 > **Try it in the browser** — enter a prompt, pick a style, generate, preview, download `landing.zip`.  
-> Part of the **[AI-Factory](https://magic-ai-factory.com/)** ecosystem · [GitHub](https://github.com/alexar76/aicom)
+> Part of the **[AI-Factory](https://magic-ai-factory.com/)** ecosystem · [GitHub](https://github.com/alexar76/aicom-landing) · [AI-Factory source](https://github.com/alexar76/aicom)
 
 A fast, self-hosted page generator. Two LLM agents — **Architect** (structure + visual plan) → **Developer** (single HTML file) — plus **20** style presets. No admin panel, no database, no QA pipeline: ideal for MVPs, A/B copy, and “ship the landing today” workflows.
 

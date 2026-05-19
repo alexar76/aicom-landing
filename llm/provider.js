@@ -14,8 +14,22 @@ function stripCodeFence(text) {
 export function extractJsonObject(text) {
   const cleaned = stripCodeFence(text);
   const start = cleaned.indexOf("{");
-  const end = cleaned.lastIndexOf("}");
-  if (start === -1 || end <= start) throw new Error("No JSON object found in model output");
+  if (start === -1) throw new Error("No JSON object found in model output");
+
+  let depth = 0;
+  let inString = false;
+  let escape = false;
+  let end = -1;
+  for (let i = start; i < cleaned.length; i++) {
+    const ch = cleaned[i];
+    if (escape) { escape = false; continue; }
+    if (ch === "\\" && inString) { escape = true; continue; }
+    if (ch === '"') { inString = !inString; continue; }
+    if (inString) continue;
+    if (ch === "{") depth++;
+    else if (ch === "}") { depth--; if (depth === 0) { end = i; break; } }
+  }
+  if (end === -1) throw new Error("No JSON object found in model output");
   return JSON.parse(cleaned.slice(start, end + 1));
 }
 
@@ -179,7 +193,7 @@ async function llmFetch(url, init, { target }) {
 async function anthropicComplete({ system, user, model, maxTokens, temperature, timeoutMs }) {
   const key = envKey("ANTHROPIC_API_KEY");
   if (!key) throw new Error("ANTHROPIC_API_KEY is missing or empty");
-  const m = model || envKey("ANTHROPIC_MODEL") || "claude-3-5-sonnet-latest";
+  const m = model || envKey("ANTHROPIC_MODEL") || "claude-sonnet-4-6";
   const controller = new AbortController();
   const id = setTimeout(() => controller.abort(), timeoutMs || 120_000);
   const target = "Anthropic api.anthropic.com";

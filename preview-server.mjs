@@ -80,8 +80,12 @@ function pruneSessions() {
     if (now - s.created > TTL_MS) sessions.delete(id);
   }
   while (sessions.size > MAX_SESSIONS) {
-    const oldest = [...sessions.entries()].sort((a, b) => a[1].created - b[1].created)[0];
-    if (oldest) sessions.delete(oldest[0]);
+    let oldestId = null;
+    let oldestCreated = Infinity;
+    for (const [id, s] of sessions) {
+      if (s.created < oldestCreated) { oldestCreated = s.created; oldestId = id; }
+    }
+    if (oldestId) sessions.delete(oldestId);
     else break;
   }
 }
