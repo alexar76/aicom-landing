@@ -103,13 +103,51 @@ Typography:
 - Real Google Font pairs (display + body). Use css_variables consistently in :root.
 `.trim();
 
-export function architectSystem() {
+/** Agent-To-Website: embedded demo chat on the generated landing. */
+const AGENT_TO_WEBSITE_SYSTEM = `
+=== AGENT-TO-WEBSITE (when generation_mode is agent_to_website — mandatory) ===
+The landing MUST include a working embedded AI agent — not just a "Contact us" button.
+
+Architect MUST add:
+- components[] entry: { name: "AI Agent Widget", description, responsibilities: ["answer product questions", "guide to CTA", "on-page task help"] }
+- ui_experience.agent_widget: {
+    placement: "fixed bottom-right FAB opening a chat panel",
+    persona: one sentence — role aligned with user_brief (sales guide, florist consultant, coach, etc.),
+    opener_message: friendly first message in content_language,
+    suggested_chips: 3–4 short starter prompts the user can tap,
+    demo_mode: true — client-side replies (no external API); answers must reference this product only
+  }
+
+Developer MUST implement:
+- Root element id="aicom-agent" (or class aicom-agent on wrapper) — required for host tooling.
+- FAB + slide-up panel: header (title + subtitle), message list, text input, Send button, close control.
+- Vanilla JS: open/close panel, append user/bot bubbles, simulate typing delay 400–700ms before bot reply.
+- Demo brain: keyword-aware replies about pricing, getting started, and "how it works" using copy from user_brief — never claim live GPT/API unless user_brief explicitly requests a real API integration.
+- Style: match :root palette, glass panel, z-index 99990, mobile-friendly (panel width min(380px, 100vw - 2rem)).
+- Accessibility: aria-expanded on FAB, role="dialog" on panel, keyboard-focusable input.
+- Language: all agent UI strings in content_language.
+- Do NOT break existing hero/sections; agent floats above content.
+
+Security (mandatory — agent widget JavaScript):
+- Demo mode by default: replies are computed in the browser only; do NOT call fetch/XHR/beacon to any URL.
+- Do NOT use eval, new Function, dynamic <script src="https://...">, or import() to third-party hosts.
+- Do NOT read document.cookie, localStorage, sessionStorage, or parent/opener windows.
+- Render user-typed chat text with textContent (or equivalent), never innerHTML/insertAdjacentHTML with raw user input.
+- Do NOT embed third-party chat SDKs (Intercom, Crisp, etc.) unless user_brief explicitly names one.
+- Do not claim the agent is "live ChatGPT" unless user_brief explicitly requires a real API — then leave a clear TODO comment only, no hardcoded API keys.
+`.trim();
+
+/**
+ * @param {{ agentToWebsite?: boolean }} [opts]
+ */
+export function architectSystem(opts = {}) {
+  const agentBlock = opts.agentToWebsite ? `\n\n${AGENT_TO_WEBSITE_SYSTEM}` : "";
   return `You are the Architect agent — senior product designer for a one-page marketing landing.
 Your job: translate the user's product brief + style preset into a binding JSON plan for the Developer.
 
 ${LANGUAGE_SYSTEM}
 
-${VISUAL_QUALITY_SYSTEM}
+${VISUAL_QUALITY_SYSTEM}${agentBlock}
 
 Output: single JSON object only (no markdown fences). Strictly valid JSON: double-quoted keys/strings, no trailing commas, no comments, escape inner quotes as \\".
 
@@ -143,10 +181,11 @@ Static landing only — no APIs or databases.`;
 }
 
 /** User turn: product brief + preset data only. */
-export function architectUser({ userPrompt, stylePreset, uiLocale }) {
+export function architectUser({ userPrompt, stylePreset, uiLocale, agentToWebsite = false }) {
   return JSON.stringify(
     {
       task: "marketing_landing",
+      generation_mode: agentToWebsite ? "agent_to_website" : "landing_only",
       user_brief: userPrompt,
       ui_locale: uiLocale,
       style_preset: {
@@ -160,12 +199,16 @@ export function architectUser({ userPrompt, stylePreset, uiLocale }) {
   );
 }
 
-export function developerSystem() {
+/**
+ * @param {{ agentToWebsite?: boolean }} [opts]
+ */
+export function developerSystem(opts = {}) {
+  const agentBlock = opts.agentToWebsite ? `\n\n${AGENT_TO_WEBSITE_SYSTEM}` : "";
   return `You are the Developer agent — implement ONE production HTML5 landing file.
 
 ${LANGUAGE_SYSTEM}
 
-${VISUAL_QUALITY_SYSTEM}
+${VISUAL_QUALITY_SYSTEM}${agentBlock}
 
 === IMPLEMENTATION (system) ===
 - Valid <!DOCTYPE html>, semantic landmarks (header, main, section, footer).
@@ -198,10 +241,11 @@ Escape quotes inside the HTML string correctly.`;
 }
 
 /** User turn: brief + Architect handoff only. */
-export function developerUser({ userPrompt, architecture, uiLocale }) {
+export function developerUser({ userPrompt, architecture, uiLocale, agentToWebsite = false }) {
   return JSON.stringify(
     {
       user_brief: userPrompt,
+      generation_mode: agentToWebsite ? "agent_to_website" : "landing_only",
       ui_locale: uiLocale,
       architecture,
     },

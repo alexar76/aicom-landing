@@ -29,6 +29,25 @@ Abstract only — no flower/product illustrations.
 
 **Photo heroes (optional):** only if you explicitly ask, e.g. `photographic Unsplash hero`. Otherwise no stock photos. Broken image URLs are checked server-side and replaced with abstract SVG fallback.
 
+---
+
+## Agent-To-Website
+
+Enable the toggle in the UI (or `--agent` / `"agent_to_website": true`). The page gets a **demo chat widget** — browser-only replies, no extra LLM calls per message. Security: [`AGENT-TO-WEBSITE.md`](./AGENT-TO-WEBSITE.md).
+
+**Example — product + on-page agent (Russian):**
+
+```
+Лендинг сервиса подписки на кофе. AI-консультант на странице помогает выбрать план и отвечает про доставку.
+Split-hero, mesh, glass cards. Abstract only — no cup illustrations.
+```
+
+CLI:
+
+```bash
+node cli.mjs "Coffee subscription with on-page AI guide" --agent --style sunset-d2c
+```
+
 **Example — florist (abstract, stylish):**
 
 ```

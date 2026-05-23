@@ -11,8 +11,45 @@ function stripCodeFence(text) {
   return m ? m[1].trim() : t;
 }
 
+/** Drop reasoning blocks and prose before the JSON object (DeepSeek-R1 etc.). */
+function normalizeModelText(text) {
+  let t = String(text || "").trim();
+  if (!t) return t;
+  const thinkClose = "</" + "think" + ">";
+  const thinkEnd = t.lastIndexOf(thinkClose);
+  if (thinkEnd !== -1) {
+    t = t.slice(thinkEnd + thinkClose.length).trim();
+  }
+  const brace = t.indexOf("{");
+  if (brace > 0) {
+    const before = t.slice(0, brace).trim();
+    if (before.length < 500 && !/"[^"]+"\s*:/.test(before)) {
+      t = t.slice(brace);
+    }
+  }
+  return t;
+}
+
+/** @param {string} slice */
+function parseJsonSlice(slice) {
+  try {
+    return JSON.parse(slice);
+  } catch (first) {
+    const fixed = slice.replace(/,\s*([}\]])/g, "$1");
+    if (fixed !== slice) {
+      try {
+        return JSON.parse(fixed);
+      } catch {
+        /* fall through */
+      }
+    }
+    throw first;
+  }
+}
+
 export function extractJsonObject(text) {
-  const cleaned = stripCodeFence(text);
+  const cleaned = stripCodeFence(normalizeModelText(text));
+  if (!cleaned) throw new Error("Model returned empty output");
   const start = cleaned.indexOf("{");
   if (start === -1) throw new Error("No JSON object found in model output");
 
@@ -29,8 +66,13 @@ export function extractJsonObject(text) {
     if (ch === "{") depth++;
     else if (ch === "}") { depth--; if (depth === 0) { end = i; break; } }
   }
-  if (end === -1) throw new Error("No JSON object found in model output");
-  return JSON.parse(cleaned.slice(start, end + 1));
+  if (end === -1) {
+    if (depth > 0) {
+      throw new Error("JSON object appears truncated in model output");
+    }
+    throw new Error("No JSON object found in model output");
+  }
+  return parseJsonSlice(cleaned.slice(start, end + 1));
 }
 
 /** Non-empty env string */
@@ -274,7 +316,18 @@ async function openaiCompatibleComplete(opts, cfg) {
       throw new Error(`${cfg.name} API error (HTTP ${res.status}).`);
     }
     const data = await res.json();
-    return data.choices?.[0]?.message?.content ?? "";
+    const choice = data.choices?.[0];
+    const content = choice?.message?.content ?? "";
+    const finish = choice?.finish_reason;
+    if (finish === "length") {
+      console.warn(
+        `[llm] ${cfg.name} response truncated (finish_reason=length, ${content.length} chars)`
+      );
+    }
+    if (!String(content).trim()) {
+      throw new Error(`${cfg.name} returned empty content`);
+    }
+    return content;
   } finally {
     clearTimeout(id);
   }

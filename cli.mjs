@@ -12,10 +12,11 @@ import { loadDotEnv } from "./lib/loadEnv.mjs";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 function parseArgs(argv) {
-  const out = { _: [], style: null, outFile: null, listStyles: false, help: false };
+  const out = { _: [], style: null, outFile: null, listStyles: false, help: false, agent: false };
   for (let i = 2; i < argv.length; i++) {
     const a = argv[i];
     if (a === "--help" || a === "-h") out.help = true;
+    else if (a === "--agent" || a === "--agent-to-website") out.agent = true;
     else if (a === "--list-styles") out.listStyles = true;
     else if (a === "--style" && argv[i + 1]) {
       out.style = argv[++i];
@@ -33,7 +34,7 @@ async function main() {
     console.log(`aicom landing — MIT fast landing generator (2-step: Architect → Developer)
 
 Usage:
-  aicom-landing "Your product pitch in natural language" [--style preset-id] [--out path]
+  aicom-landing "Your product pitch in natural language" [--style preset-id] [--out path] [--agent]
 
 Env (first match wins — set in shell or in a file named .env next to package.json):
   ANTHROPIC_API_KEY  (+ optional ANTHROPIC_MODEL)
@@ -78,6 +79,7 @@ Full product (quality gates, marketplace): https://magic-ai-factory.com/ · sour
   const { html, stylePreset } = await generateLanding({
     userPrompt,
     styleId: args.style,
+    agentToWebsite: args.agent,
     rootDir: __dirname,
   });
   console.log(`Style used: ${stylePreset.id}`);

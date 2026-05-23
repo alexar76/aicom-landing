@@ -362,6 +362,67 @@
       align-items: center;
     }
 
+    .agent-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.55rem;
+      cursor: pointer;
+      user-select: none;
+      font-size: 0.82rem;
+      color: var(--muted);
+      padding: 0.35rem 0.15rem;
+    }
+    .agent-toggle input {
+      position: absolute;
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .agent-toggle-ui {
+      flex-shrink: 0;
+      width: 2.35rem;
+      height: 1.25rem;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid var(--line2);
+      position: relative;
+      transition: background 0.2s ease, border-color 0.2s ease;
+    }
+    .agent-toggle-ui::after {
+      content: "";
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: calc(1.25rem - 6px);
+      height: calc(1.25rem - 6px);
+      border-radius: 50%;
+      background: #94a3b8;
+      transition: transform 0.22s var(--ease-out), background 0.2s ease;
+    }
+    .agent-toggle input:checked + .agent-toggle-ui {
+      background: linear-gradient(135deg, rgba(129, 140, 248, 0.45), rgba(192, 132, 252, 0.35));
+      border-color: rgba(129, 140, 248, 0.5);
+    }
+    .agent-toggle input:checked + .agent-toggle-ui::after {
+      transform: translateX(1.1rem);
+      background: #e0e7ff;
+    }
+    .agent-toggle input:focus-visible + .agent-toggle-ui {
+      box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.25);
+    }
+    .agent-toggle-label {
+      font-weight: 500;
+      color: var(--text);
+    }
+    .agent-toggle-hint {
+      display: block;
+      font-size: 0.72rem;
+      color: var(--muted2);
+      margin-top: 0.15rem;
+      max-width: 14rem;
+      line-height: 1.35;
+    }
+
     .btn-primary-wrap {
       position: relative;
       border-radius: 999px;
@@ -666,6 +727,14 @@
         <div class="btn-primary-wrap">
           <button type="button" id="go" data-i18n="btnGenerate">Generate landing</button>
         </div>
+        <label class="agent-toggle" for="agentMode" title="Agent-To-Website">
+          <input type="checkbox" id="agentMode" name="agent_to_website" />
+          <span class="agent-toggle-ui" aria-hidden="true"></span>
+          <span>
+            <span class="agent-toggle-label" data-i18n="labelAgentMode">Agent-To-Website</span>
+            <span class="agent-toggle-hint" data-i18n="hintAgentMode">Embed a working AI chat agent on the page.</span>
+          </span>
+        </label>
       </div>
       <p class="status" id="status"></p>
       <div class="row" style="margin-top:0.65rem">
@@ -929,6 +998,7 @@
             prompt,
             style: $("style").value || null,
             ui_locale: uiLocale,
+            agent_to_website: $("agentMode").checked,
           }),
         });
         const ct = (r.headers.get("content-type") || "").toLowerCase();
@@ -942,16 +1012,18 @@
         }
         if (!r.ok) {
           const errMsg = data.error || r.statusText;
-          if (/API key|DEEPSEEK_API_KEY|LLM API key/i.test(errMsg)) {
+          if (/API key|DEEPSEEK_API_KEY|LLM API key/i.test(errMsg) && !/rejected|authentication|401|403/i.test(errMsg)) {
             throw new Error("__AICOM_NO_LLM__");
+          }
+          if (/rejected|authentication failed|authentication_error|HTTP 401|HTTP 403/i.test(errMsg)) {
+            throw new Error("__AICOM_AUTH_KEY__");
           }
           throw new Error(errMsg);
         }
         status.className = "status";
-        status.textContent = t("statusReady", {
-          seconds: data.seconds,
-          styleId: data.styleId,
-        });
+        status.textContent = data.agent_to_website
+          ? t("statusReadyAgent", { seconds: data.seconds, styleId: data.styleId })
+          : t("statusReady", { seconds: data.seconds, styleId: data.styleId });
         const previewRes = await fetch(BASE + "/preview/" + data.id);
         if (!previewRes.ok) {
           throw new Error("Preview failed (" + previewRes.status + "). Try Open full page.");
@@ -971,6 +1043,8 @@
           status.textContent = t("errGenerateTimeout");
         } else if (raw === "__AICOM_NO_LLM__") {
           status.textContent = t("errGenerateNoLlm");
+        } else if (raw === "__AICOM_AUTH_KEY__") {
+          status.textContent = t("errGenerateAuthKey");
         } else if (
           /failed to fetch|networkerror|load failed|attempting to fetch resource|не удалось получить|no se pudo obtener/i.test(
             raw

@@ -122,6 +122,24 @@ The UI calls `POST /api/generate` and waits for the full LLM pipeline (often **1
 
 Node already sets `server.requestTimeout = 0` so the app process does not cut off long runs — the reverse proxy must match.
 
+## Troubleshooting: invalid JSON (Architect / Developer)
+
+The UI may show: *“The model returned invalid JSON 3 times (Architect stage)…”*
+
+| Symptom | Likely cause | Fix |
+|--------|----------------|-----|
+| **Architect** fails 3×, logs mention `truncated` or `finish_reason=length` | Plan JSON too large (common with **Agent-To-Website** + rich `ui_experience`) | Use current server build (Architect **8192** tokens); retry Generate; or disable Agent-To-Website for a shorter plan |
+| **No JSON object found** / empty output | Model returned prose or reasoning without `{…}` | Retry; shorten prompt; check provider status |
+| **HTTP 401** / “API key rejected” | Invalid `DEEPSEEK_API_KEY` (or other provider key) on the **server** | Update `.env` on host, `docker compose up -d --build` |
+| **Developer** fails after Architect OK | HTML JSON truncated | Current build uses **16384** tokens + retries; retry or simplify brief |
+
+Env tuning (optional):
+
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| `AICOM_LANDING_JSON_RETRIES` | `3` | Parse retries per stage (Architect / Developer) |
+| `AICOM_LANDING_FETCH_RETRIES` | `3` | Retries for transient LLM HTTP/network errors |
+
 ## Checklist
 
 - TLS in front of the app on the public internet.

@@ -38,6 +38,21 @@ not treated as vulnerabilities by themselves:
   `POST /api/generate` on a deployed instance can consume your provider quota —
   protect the deployment accordingly.
 
+## Agent-To-Website mode
+
+When `agent_to_website` is enabled, generated pages may include an **embedded chat
+widget** (JavaScript in the static HTML).
+
+| Risk | Mitigation in this repo |
+|------|-------------------------|
+| LLM emits malicious script (`eval`, exfiltration via `fetch`, etc.) | Post-generation audit in `lib/agentToWebsite.mjs`; unsafe widgets are **replaced** with a audited fallback (default strict mode). See [`docs/AGENT-TO-WEBSITE.md`](docs/AGENT-TO-WEBSITE.md). |
+| Visitor types XSS into the chat box | Fallback widget uses `textContent` only; prompts forbid `innerHTML` for user messages. |
+| Users assume chat is a live LLM | Default is **demo mode** (browser-only replies). Do not expose static HTML with embedded API keys. |
+| Chat data privacy | Demo widget does **not** send messages to `aicom-landing` or to model providers. Real integrations require your own backend. |
+
+**Reporting:** vulnerabilities in the **fallback widget** or bypass of strict replacement
+are in scope. “The demo agent gives wrong answers” is not a security issue.
+
 ## Safe harbor
 
 If you follow coordinated disclosure and act in good faith, we will not pursue
