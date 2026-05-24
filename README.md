@@ -98,7 +98,54 @@ npx aicom-landing "Green energy startup" --style sage-organic --out ./dist/page.
 npx aicom-landing "Florist with on-page AI guide" --agent
 ```
 
-Provider order (`llm/provider.js`): Anthropic → DeepSeek → OpenAI → Ollama. Keys and `AICOM_LANDING_UI_LOCALE` load from `.env` at startup (`.env` overrides shell exports).
+Keys and `AICOM_LANDING_UI_LOCALE` load from `.env` at startup (`.env` overrides shell exports). Provider choice and models: [**LLM providers**](#llm-providers) below.
+
+---
+
+## LLM providers
+
+There is **no provider toggle in the UI** — the server picks the first configured cloud key, otherwise Ollama. Routing lives in [`llm/provider.js`](llm/provider.js).
+
+### Where API keys live
+
+| Environment | File / location |
+|-------------|-----------------|
+| **Local** (`npm run serve`, CLI) | `.env` next to `package.json` (copy from [`.env.example`](.env.example); **never commit** — listed in `.gitignore`) |
+| **Docker** | Host `./.env`, mounted via `env_file:` in [`docker-compose.yml`](docker-compose.yml) |
+| **Production (VPS)** | e.g. `/opt/aicom-landing/.env` on the server — **separate** from your laptop; edit on the host, then `docker compose up -d --build` |
+
+Keys are read only on the **server** (Architect → Developer pipeline). The browser never sees `DEEPSEEK_API_KEY` or other secrets.
+
+After changing `.env`, restart the process (`npm run serve` or recreate the container).
+
+### Which provider is used (priority)
+
+| Order | If this env var is set | Default model | Optional model override |
+|------:|------------------------|---------------|-------------------------|
+| 1 | `ANTHROPIC_API_KEY` | `claude-sonnet-4-6` | `ANTHROPIC_MODEL` |
+| 2 | `DEEPSEEK_API_KEY` | `deepseek-chat` | `DEEPSEEK_MODEL`, `DEEPSEEK_BASE_URL` (default `https://api.deepseek.com/v1`) |
+| 3 | `OPENAI_API_KEY` | `gpt-4o-mini` | `OPENAI_MODEL`, `OPENAI_BASE_URL` (Groq / other OpenAI-compatible APIs) |
+| 4 | *(none of the above)* | Ollama | `OLLAMA_HOST` (default `http://127.0.0.1:11434`), `OLLAMA_MODEL` (default `llama3.2`) |
+
+**DeepSeek only:** set `DEEPSEEK_API_KEY` and leave `ANTHROPIC_API_KEY` / `OPENAI_API_KEY` unset (or commented out) in `.env`.
+
+**Example `.env` (DeepSeek):**
+
+```bash
+DEEPSEEK_API_KEY=sk-...
+# DEEPSEEK_MODEL=deepseek-chat
+# DEEPSEEK_BASE_URL=https://api.deepseek.com/v1
+AICOM_LANDING_UI_LOCALE=ru
+```
+
+### Generation tuning (optional)
+
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| `AICOM_LANDING_JSON_RETRIES` | `3` | Retries per stage when model JSON is malformed or truncated |
+| `AICOM_LANDING_FETCH_RETRIES` | `3` | Retries for transient LLM HTTP/network errors |
+
+Architect / Developer output token caps are fixed in code (**8192** / **16384**). Troubleshooting JSON errors: [`docs/DEPLOY.md`](docs/DEPLOY.md#troubleshooting-invalid-json-architect--developer).
 
 ---
 
