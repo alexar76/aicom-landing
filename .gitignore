@@ -1,7 +1,14 @@
 .env
+.env.*
+!.env.example
 node_modules/
 output/
+
+# Local agent / IDE (never commit)
 .claude/
+.cursor/
+.idea/
+.vscode/
 
 # macOS
 .DS_Store
