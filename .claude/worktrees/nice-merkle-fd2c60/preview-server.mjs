@@ -21,7 +21,6 @@ import {
   SUPPORTED_UI_LOCALES,
 } from "./lib/uiLocale.mjs";
 import { isLlmConfigured } from "./lib/llmReady.mjs";
-import { isPublicUi } from "./lib/publicUi.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = __dirname;
@@ -202,13 +201,6 @@ async function handleApiGenerate(req, res) {
     json(res, 403, { error: "Cross-origin request rejected (invalid Origin/Referer)." });
     return;
   }
-  if (!isLlmConfigured()) {
-    json(res, 503, {
-      error:
-        "No LLM API key on this server. Add DEEPSEEK_API_KEY (or another provider) to your self-hosted .env and restart.",
-    });
-    return;
-  }
   const ip = clientIp(req);
   if (rateLimitExceeded(ip)) {
     json(res, 429, { error: "Too many generate requests. Wait and try again." });
@@ -247,24 +239,21 @@ async function handleApiGenerate(req, res) {
     body.ui_locale != null && String(body.ui_locale).trim()
       ? String(body.ui_locale)
       : getDefaultUiLocale();
-  const agentToWebsite = body.agent_to_website === true || body.agent_to_website === "true";
 
   pruneSessions();
   const t0 = Date.now();
   try {
-    const { html, stylePreset, agentToWebsite: agentMode } = await generateLanding({
+    const { html, stylePreset } = await generateLanding({
       userPrompt: prompt,
       styleId: style,
       uiLocale,
       rootDir: ROOT,
-      agentToWebsite,
     });
     const id = randomBytes(12).toString("hex");
     sessions.set(id, { html, created: Date.now() });
     json(res, 200, {
       id,
       styleId: stylePreset.id,
-      agent_to_website: agentMode,
       seconds: ((Date.now() - t0) / 1000).toFixed(1),
     });
   } catch (e) {
@@ -282,12 +271,10 @@ async function handleStatic(req, res) {
   const pathname = resolveRequestPath(url.pathname, BASE_PATH);
   if (pathname === "/api/config" && req.method === "GET") {
     const locale = resolveUiLocale(url.searchParams.get("lang"));
-    const publicUi = isPublicUi();
     json(res, 200, {
       ui_locale: locale,
       supported_locales: [...SUPPORTED_UI_LOCALES],
-      strings: getUiStrings(locale, { publicUi }),
-      public_ui: publicUi,
+      strings: getUiStrings(locale),
       llm_ready: isLlmConfigured(),
     });
     return;
@@ -300,11 +287,6 @@ async function handleStatic(req, res) {
       `<head>\n  <script>window.__AICOM_BASE__=${JSON.stringify(BASE_PATH)};</script>`
     );
     html = html.replace(/<html\s+lang="[^"]*"/, `<html lang="${locale}" data-ui-locale="${locale}"`);
-    if (isPublicUi()) {
-      html = html.replace(/>local only</i, ">Live<");
-      html = html.replace(/>только локально</i, ">Live<");
-      html = html.replace(/>solo local</i, ">Live<");
-    }
     res.writeHead(200, {
       ...BASE_SECURITY_HEADERS,
       "Content-Security-Policy": APP_PAGE_CSP,

@@ -362,67 +362,6 @@
       align-items: center;
     }
 
-    .agent-toggle {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.55rem;
-      cursor: pointer;
-      user-select: none;
-      font-size: 0.82rem;
-      color: var(--muted);
-      padding: 0.35rem 0.15rem;
-    }
-    .agent-toggle input {
-      position: absolute;
-      opacity: 0;
-      width: 0;
-      height: 0;
-    }
-    .agent-toggle-ui {
-      flex-shrink: 0;
-      width: 2.35rem;
-      height: 1.25rem;
-      border-radius: 999px;
-      background: rgba(255, 255, 255, 0.1);
-      border: 1px solid var(--line2);
-      position: relative;
-      transition: background 0.2s ease, border-color 0.2s ease;
-    }
-    .agent-toggle-ui::after {
-      content: "";
-      position: absolute;
-      top: 2px;
-      left: 2px;
-      width: calc(1.25rem - 6px);
-      height: calc(1.25rem - 6px);
-      border-radius: 50%;
-      background: #94a3b8;
-      transition: transform 0.22s var(--ease-out), background 0.2s ease;
-    }
-    .agent-toggle input:checked + .agent-toggle-ui {
-      background: linear-gradient(135deg, rgba(129, 140, 248, 0.45), rgba(192, 132, 252, 0.35));
-      border-color: rgba(129, 140, 248, 0.5);
-    }
-    .agent-toggle input:checked + .agent-toggle-ui::after {
-      transform: translateX(1.1rem);
-      background: #e0e7ff;
-    }
-    .agent-toggle input:focus-visible + .agent-toggle-ui {
-      box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.25);
-    }
-    .agent-toggle-label {
-      font-weight: 500;
-      color: var(--text);
-    }
-    .agent-toggle-hint {
-      display: block;
-      font-size: 0.72rem;
-      color: var(--muted2);
-      margin-top: 0.15rem;
-      max-width: 14rem;
-      line-height: 1.35;
-    }
-
     .btn-primary-wrap {
       position: relative;
       border-radius: 999px;
@@ -657,31 +596,6 @@
       background: #fff;
     }
 
-    .preview-key-badge {
-      margin: 0 0 0.75rem;
-      padding: 0.65rem 0.85rem;
-      border-radius: var(--radius-sm);
-      border: 1px solid rgba(250, 204, 21, 0.35);
-      background: rgba(250, 204, 21, 0.08);
-      font-size: 0.78rem;
-      line-height: 1.45;
-      color: #fde68a;
-    }
-    .preview-key-badge code {
-      font-family: "IBM Plex Mono", monospace;
-      font-size: 0.72rem;
-      color: #fef3c7;
-    }
-    .preview-key-badge a {
-      color: var(--accent);
-      text-decoration: underline;
-      text-underline-offset: 2px;
-    }
-    .preview-key-badge strong {
-      font-weight: 600;
-      color: #fff;
-    }
-
     .spark {
       position: absolute;
       width: 3px;
@@ -752,14 +666,6 @@
         <div class="btn-primary-wrap">
           <button type="button" id="go" data-i18n="btnGenerate">Generate landing</button>
         </div>
-        <label class="agent-toggle" for="agentMode" title="Agent-To-Website">
-          <input type="checkbox" id="agentMode" name="agent_to_website" />
-          <span class="agent-toggle-ui" aria-hidden="true"></span>
-          <span>
-            <span class="agent-toggle-label" data-i18n="labelAgentMode">Agent-To-Website</span>
-            <span class="agent-toggle-hint" data-i18n="hintAgentMode">Embed a working AI chat agent on the page.</span>
-          </span>
-        </label>
       </div>
       <p class="status" id="status"></p>
       <div class="row" style="margin-top:0.65rem">
@@ -777,7 +683,6 @@
           <button type="button" id="openFull" hidden data-i18n="btnOpenFullPage">Open full page</button>
         </div>
       </div>
-      <p class="preview-key-badge" id="previewKeyBadge" data-i18n-html="previewOwnKeyBadge" aria-live="polite"></p>
       <div class="frame-chrome">
         <div class="frame-dots" aria-hidden="true"><span></span><span></span><span></span></div>
         <div class="frame-url" aria-hidden="true">preview / canvas</div>
@@ -849,7 +754,6 @@
     const go = $("go");
     let downloadId = null;
     let downloading = false;
-    let llmReady = true;
     let uiLocale = document.documentElement.getAttribute("data-ui-locale") || "en";
   /** @type {Record<string, string>} */
     let i18n = {};
@@ -870,7 +774,7 @@
         if (key && i18n[key]) el.textContent = i18n[key];
       });
       /** Keys allowed to render HTML from bundled locale strings only (never user input). */
-      const i18nTrustedHtmlKeys = new Set(["heroLead", "heroKeys", "previewOwnKeyBadge"]);
+      const i18nTrustedHtmlKeys = new Set(["heroLead", "heroKeys"]);
       document.querySelectorAll("[data-i18n-html]").forEach((el) => {
         const key = el.getAttribute("data-i18n-html");
         if (!key || !i18n[key]) return;
@@ -903,11 +807,10 @@
       document.documentElement.lang = uiLocale;
       document.documentElement.setAttribute("data-ui-locale", uiLocale);
       applyUiStrings();
-      llmReady = cfg.llm_ready !== false;
-      go.disabled = !llmReady;
-      go.title = llmReady ? "" : t("errGenerateNoLlm");
-      const keyBadge = $("previewKeyBadge");
-      if (keyBadge) keyBadge.hidden = llmReady;
+      if (cfg.llm_ready === false) {
+        status.className = "status err";
+        status.textContent = t("errGenerateNoLlm");
+      }
     }
 
     async function loadPresets() {
@@ -1026,7 +929,6 @@
             prompt,
             style: $("style").value || null,
             ui_locale: uiLocale,
-            agent_to_website: $("agentMode").checked,
           }),
         });
         const ct = (r.headers.get("content-type") || "").toLowerCase();
@@ -1040,22 +942,16 @@
         }
         if (!r.ok) {
           const errMsg = data.error || r.statusText;
-          if (
-            r.status === 503 ||
-            (/API key|DEEPSEEK_API_KEY|LLM API key/i.test(errMsg) &&
-              !/rejected|authentication|401|403/i.test(errMsg))
-          ) {
+          if (/API key|DEEPSEEK_API_KEY|LLM API key/i.test(errMsg)) {
             throw new Error("__AICOM_NO_LLM__");
-          }
-          if (/rejected|authentication failed|authentication_error|HTTP 401|HTTP 403/i.test(errMsg)) {
-            throw new Error("__AICOM_AUTH_KEY__");
           }
           throw new Error(errMsg);
         }
         status.className = "status";
-        status.textContent = data.agent_to_website
-          ? t("statusReadyAgent", { seconds: data.seconds, styleId: data.styleId })
-          : t("statusReady", { seconds: data.seconds, styleId: data.styleId });
+        status.textContent = t("statusReady", {
+          seconds: data.seconds,
+          styleId: data.styleId,
+        });
         const previewRes = await fetch(BASE + "/preview/" + data.id);
         if (!previewRes.ok) {
           throw new Error("Preview failed (" + previewRes.status + "). Try Open full page.");
@@ -1075,8 +971,6 @@
           status.textContent = t("errGenerateTimeout");
         } else if (raw === "__AICOM_NO_LLM__") {
           status.textContent = t("errGenerateNoLlm");
-        } else if (raw === "__AICOM_AUTH_KEY__") {
-          status.textContent = t("errGenerateAuthKey");
         } else if (
           /failed to fetch|networkerror|load failed|attempting to fetch resource|не удалось получить|no se pudo obtener/i.test(
             raw
@@ -1088,7 +982,7 @@
         }
       } finally {
         clearInterval(busyTick);
-        go.disabled = !llmReady;
+        go.disabled = false;
         document.body.classList.remove("generating");
       }
     });

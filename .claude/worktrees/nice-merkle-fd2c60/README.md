@@ -1,10 +1,3 @@
-<!-- aicom-mirror-notice -->
-> **Mirror — read-only.**
-> The canonical source for `aicom-landing` lives in the AI-Factory monorepo.
-> Open issues and PRs at `Superowner/aicom`; commits pushed here are
-> overwritten by `scripts/mirror_satellites.sh` on the next sync run.
-> See `docs/repository-canonical-policy.md` for the policy.
-
 # AI landing generator
 
 **MIT · one prompt → one self-contained HTML landing in ~30–60 seconds.**
@@ -22,7 +15,7 @@ A fast, self-hosted page generator. Two LLM agents — **Architect** (structure 
 | **Output** | One `index.html` (+ optional ZIP) | Full product + gates |
 | **Best for** | Landing hypothesis, marketing experiments | Production software |
 
-**API (hosted):** `POST` [`https://magic-ai-factory.com/landing-page-generation/api/generate`](https://magic-ai-factory.com/landing-page-generation/api/generate) — JSON body; send `Origin` / `Referer` for the same host (not a GET link in the browser). Optional: `"agent_to_website": true` — see [`docs/AGENT-TO-WEBSITE.md`](docs/AGENT-TO-WEBSITE.md).
+**API (hosted):** `POST` [`https://magic-ai-factory.com/landing-page-generation/api/generate`](https://magic-ai-factory.com/landing-page-generation/api/generate) — JSON body; send `Origin` / `Referer` for the same host (not a GET link in the browser).
 
 ---
 
@@ -30,9 +23,9 @@ A fast, self-hosted page generator. Two LLM agents — **Architect** (structure 
 
 ### Generator UI (local preview)
 
-Type a product brief, pick a visual preset (or Auto), optionally enable **Agent-To-Website** (embedded demo chat on the page), generate, preview in-page, download `landing.zip`.
+Type a product brief, pick a visual preset (or Auto), generate, preview in-page, download `landing.zip`.
 
-![aicom landing generator UI — Agent-To-Website toggle enabled](docs/screenshots/ui-generator.png)
+![aicom landing generator UI](docs/screenshots/ui-generator.png)
 
 ```bash
 npm run serve
@@ -45,7 +38,7 @@ UI languages: **en** (default), **ru**, **es** — set `AICOM_LANDING_UI_LOCALE=
 
 ## Example landings (generated with this repo)
 
-Real outputs from the CLI (DeepSeek, May 2026). Each file is **one HTML document** with an embedded **demo AI agent** (chat open in screenshots) — open locally or host anywhere static.
+Real outputs from the CLI (DeepSeek, May 2026). Each file is **one HTML document** — open locally or host anywhere static.
 
 ### 1 · SaaS task manager · `midnight-terminal`
 
@@ -102,57 +95,9 @@ npm run serve                 # web UI on :3847
 ```bash
 npx aicom-landing "SaaS landing for an AI task manager for remote teams"
 npx aicom-landing "Green energy startup" --style sage-organic --out ./dist/page.html
-npx aicom-landing "Florist with on-page AI guide" --agent
 ```
 
-Keys and `AICOM_LANDING_UI_LOCALE` load from `.env` at startup (`.env` overrides shell exports). Provider choice and models: [**LLM providers**](#llm-providers) below.
-
----
-
-## LLM providers
-
-There is **no provider toggle in the UI** — the server picks the first configured cloud key, otherwise Ollama. Routing lives in [`llm/provider.js`](llm/provider.js).
-
-### Where API keys live
-
-| Environment | File / location |
-|-------------|-----------------|
-| **Local** (`npm run serve`, CLI) | `.env` next to `package.json` (copy from [`.env.example`](.env.example); **never commit** — listed in `.gitignore`) |
-| **Docker** | Host `./.env`, mounted via `env_file:` in [`docker-compose.yml`](docker-compose.yml) |
-| **Production (VPS)** | e.g. `/opt/aicom-landing/.env` on the server — **separate** from your laptop; edit on the host, then `docker compose up -d --build` |
-
-Keys are read only on the **server** (Architect → Developer pipeline). The browser never sees `DEEPSEEK_API_KEY` or other secrets.
-
-After changing `.env`, restart the process (`npm run serve` or recreate the container).
-
-### Which provider is used (priority)
-
-| Order | If this env var is set | Default model | Optional model override |
-|------:|------------------------|---------------|-------------------------|
-| 1 | `ANTHROPIC_API_KEY` | `claude-sonnet-4-6` | `ANTHROPIC_MODEL` |
-| 2 | `DEEPSEEK_API_KEY` | `deepseek-chat` | `DEEPSEEK_MODEL`, `DEEPSEEK_BASE_URL` (default `https://api.deepseek.com/v1`) |
-| 3 | `OPENAI_API_KEY` | `gpt-4o-mini` | `OPENAI_MODEL`, `OPENAI_BASE_URL` (Groq / other OpenAI-compatible APIs) |
-| 4 | *(none of the above)* | Ollama | `OLLAMA_HOST` (default `http://127.0.0.1:11434`), `OLLAMA_MODEL` (default `llama3.2`) |
-
-**DeepSeek only:** set `DEEPSEEK_API_KEY` and leave `ANTHROPIC_API_KEY` / `OPENAI_API_KEY` unset (or commented out) in `.env`.
-
-**Example `.env` (DeepSeek):**
-
-```bash
-DEEPSEEK_API_KEY=sk-...
-# DEEPSEEK_MODEL=deepseek-chat
-# DEEPSEEK_BASE_URL=https://api.deepseek.com/v1
-AICOM_LANDING_UI_LOCALE=ru
-```
-
-### Generation tuning (optional)
-
-| Variable | Default | Purpose |
-|----------|---------|---------|
-| `AICOM_LANDING_JSON_RETRIES` | `3` | Retries per stage when model JSON is malformed or truncated |
-| `AICOM_LANDING_FETCH_RETRIES` | `3` | Retries for transient LLM HTTP/network errors |
-
-Architect / Developer output token caps are fixed in code (**8192** / **16384**). Troubleshooting JSON errors: [`docs/DEPLOY.md`](docs/DEPLOY.md#troubleshooting-invalid-json-architect--developer).
+Provider order (`llm/provider.js`): Anthropic → DeepSeek → OpenAI → Ollama. Keys and `AICOM_LANDING_UI_LOCALE` load from `.env` at startup (`.env` overrides shell exports).
 
 ---
 
@@ -169,16 +114,11 @@ Architect / Developer output token caps are fixed in code (**8192** / **16384**)
 | `AICOM_LANDING_RATE_LIMIT` | `20` | Max `POST /api/generate` per client IP per 15 minutes (`0` = off) |
 | `AICOM_LANDING_TRUST_PROXY` | *(unset)* | Set to `true` only behind your own reverse proxy so rate limits honor `X-Forwarded-For` safely |
 | `AICOM_LANDING_BASE_PATH` | *(empty)* | Browser URL prefix when the app is not at domain root (e.g. `/landing-page-generation`). Prefer a **subdomain** instead — see [`docs/DEPLOY.md`](docs/DEPLOY.md). |
-| `AICOM_LANDING_AGENT_STRICT` | *(on)* | Replace LLM agent widget if risky JS detected (`false` to disable) |
-| `AICOM_LANDING_SKIP_AGENT_INJECT` | *(off)* | `true` = never inject safe fallback widget |
 
-**Agent-To-Website:** [`docs/AGENT-TO-WEBSITE.md`](docs/AGENT-TO-WEBSITE.md) — embedded chat, demo mode, security model.
 
 **Production / reverse proxy:** see [`docs/DEPLOY.md`](docs/DEPLOY.md) (subdomain recommended, TLS, nginx).
 
-The badge is **injected after generation** (`lib/badgeConfig.mjs`), not left to the LLM — so URL/label stay exact. When the page includes **`#aicom-agent`** (Agent-To-Website), the badge is placed **left of the chat FAB** (`bottom: 0.625rem`, `right: 5.85rem`) so it does not cover the button.
-
-**Generation limits (built-in):** Architect uses up to **8192** output tokens; Developer up to **16384**. Malformed or truncated JSON is retried (`AICOM_LANDING_JSON_RETRIES`, default **3**). See [`docs/DEPLOY.md`](docs/DEPLOY.md#troubleshooting-invalid-json-architect--developer).
+The badge is **injected after generation** (`lib/badgeConfig.mjs`), not left to the LLM — so URL/label stay exact.
 
 **Security:** the preview iframe uses **`sandbox`** (scripts/forms only; **no `allow-same-origin`**) so generated JS cannot read this UI’s cookies or DOM. Responses add **CSP** on the shell page and on `/preview/:id`. Still treat LLM output as untrusted: host behind auth/TLS on anything beyond a personal machine.
 
@@ -187,7 +127,6 @@ The badge is **injected after generation** (`lib/badgeConfig.mjs`), not left to 
 | Preview / ZIP payload | Session IDs are unguessable + TTL; CSP on preview; iframe sandbox isolates the parent UI |
 | CSRF on `POST /api/generate` | `Origin` / `Referer` hostname must match `Host` hostname (default ports like `:443` / `:80` ignored so TLS proxies work) |
 | Abuse / cost | Optional rate limit: `AICOM_LANDING_RATE_LIMIT` (default **20** POSTs per IP per **15** min; `0` disables) |
-| Agent widget JS | Strict audit + safe fallback; demo chat does not call your LLM — [`docs/AGENT-TO-WEBSITE.md`](docs/AGENT-TO-WEBSITE.md) |
 
 Programmatic `POST /api/generate` from non-browser tools must send `Origin` or `Referer` whose **hostname** matches the request `Host` hostname (e.g. `-H "Origin: http://127.0.0.1:3847"`).
 
@@ -259,14 +198,12 @@ aicom-landing/
 ├── public/index.html       # Generator UI
 ├── lib/
 │   ├── generate.mjs        # Architect → Developer pipeline
-│   ├── agentToWebsite.mjs  # Agent-To-Website widget + security audit
 │   ├── badgeConfig.mjs     # Powered-by env + HTML inject
 │   ├── uiLocale.mjs        # UI strings (en / ru / es)
 │   └── …
 ├── llm/                    # provider + prompts
 ├── styles/presets.json
 ├── docs/
-│   ├── AGENT-TO-WEBSITE.md # Embedded agent mode + security
 │   ├── screenshots/        # README images
 │   └── examples/           # Sample generated landings
 └── Dockerfile

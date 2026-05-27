@@ -1,0 +1,13 @@
+# Secrets live in ./.env on the host — they persist across container recreate/restart.
+# Edit .env once, then: docker compose up -d --build
+services:
+  aicom-landing:
+    build: .
+    ports:
+      - "127.0.0.1:3847:3847"
+    env_file:
+      - .env
+    environment:
+      # .env may set 127.0.0.1 for local Node; inside Docker listen on all interfaces.
+      AICOM_LANDING_HOST: "0.0.0.0"
+    restart: unless-stopped
