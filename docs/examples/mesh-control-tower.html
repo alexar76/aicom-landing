@@ -1,0 +1,942 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Service Mesh Control Tower</title>
+<link href="fonts/fonts.css" rel="stylesheet" />
+<style>
+  :root {
+    --void: #05080f;
+    --abyss: #0a0f1c;
+    --cyan: #00e5ff;
+    --magenta: #ff2e88;
+    --glass: rgba(255,255,255,0.06);
+    --hairline: rgba(255,255,255,0.12);
+    --text-primary: #e6f1ff;
+    --text-secondary: #9aa8c0;
+    --accent-glow: rgba(0,229,255,0.35);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--void);
+    color: var(--text-primary);
+    font-family: 'Inter', sans-serif;
+    overflow-x: hidden;
+  }
+
+  h1, h2, h3, .eyebrow { font-family: 'Orbitron', sans-serif; }
+
+  a { color: inherit; text-decoration: none; }
+
+  .container { max-width: 1200px; margin: 0 auto; padding: 0 2rem; }
+
+  /* Hero */
+  .hero {
+    position: relative;
+    min-height: 100svh;
+    overflow: hidden;
+    background: var(--void);
+    display: flex;
+    align-items: center;
+  }
+
+  .hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse at 20% 20%, rgba(0,229,255,0.25), transparent 50%),
+      radial-gradient(ellipse at 80% 70%, rgba(255,46,136,0.2), transparent 50%),
+      linear-gradient(180deg, rgba(5,8,15,0.9), rgba(5,8,15,0.6));
+    z-index: 0;
+  }
+
+  .hero::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+    z-index: 1;
+    pointer-events: none;
+  }
+
+  .hero-deco {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  .hero-inner {
+    position: relative;
+    z-index: 2;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    align-items: center;
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 2rem;
+  }
+
+  .hero-copy {
+    position: relative;
+    padding: 2rem;
+    background: linear-gradient(135deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02));
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--hairline);
+    border-radius: 20px;
+  }
+
+  .eyebrow {
+    font-size: 0.8rem;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--cyan);
+    margin-bottom: 1rem;
+  }
+
+  h1 {
+    font-size: clamp(2.5rem, 5vw, 4.5rem);
+    line-height: 1.1;
+    font-weight: 900;
+    margin-bottom: 1.5rem;
+    text-shadow: 0 0 20px rgba(0,229,255,0.3);
+  }
+
+  .hero-sub {
+    font-size: 1.1rem;
+    color: var(--text-secondary);
+    margin-bottom: 2rem;
+    line-height: 1.6;
+  }
+
+  .cta-group {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .btn {
+    display: inline-block;
+    padding: 0.9rem 2rem;
+    border-radius: 50px;
+    font-weight: 600;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    border: 1px solid transparent;
+  }
+
+  .btn-primary {
+    background: linear-gradient(135deg, var(--cyan), var(--magenta));
+    color: #05080f;
+    box-shadow: 0 0 20px var(--accent-glow);
+  }
+
+  .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0 30px rgba(0,229,255,0.6);
+  }
+
+  .btn-secondary {
+    background: transparent;
+    border-color: var(--hairline);
+    color: var(--text-primary);
+  }
+
+  .btn-secondary:hover {
+    background: rgba(255,255,255,0.05);
+  }
+
+  /* Sections */
+  section { padding: clamp(4rem, 8vw, 7rem) 0; position: relative; }
+
+  .section-header {
+    text-align: center;
+    margin-bottom: 3rem;
+  }
+
+  .section-header h2 {
+    font-size: clamp(2rem, 4vw, 3rem);
+    margin-bottom: 0.5rem;
+  }
+
+  .section-header p {
+    color: var(--text-secondary);
+    max-width: 600px;
+    margin: 0 auto;
+  }
+
+  /* Loop section */
+  .loop-section {
+    background: linear-gradient(135deg, var(--abyss), var(--void));
+  }
+
+  .loop-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+  }
+
+  .loop-card {
+    background: var(--glass);
+    border: 1px solid var(--hairline);
+    border-radius: 16px;
+    padding: 2rem;
+    backdrop-filter: blur(12px);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+  }
+
+  .loop-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+  }
+
+  .loop-step {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.8rem;
+    color: var(--magenta);
+    letter-spacing: 0.2em;
+    margin-bottom: 0.5rem;
+  }
+
+  .loop-card h3 {
+    font-size: 1.2rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .loop-card p {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    line-height: 1.5;
+  }
+
+  /* Topology section */
+  .topology-section {
+    background:
+      linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+
+  .topology-wrap {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    align-items: center;
+  }
+
+  .topology-svg {
+    width: 100%;
+    height: auto;
+  }
+
+  .spend-strip {
+    background: rgba(0,0,0,0.4);
+    border: 1px solid var(--hairline);
+    border-radius: 12px;
+    padding: 1rem 2rem;
+    display: flex;
+    gap: 2rem;
+    overflow-x: auto;
+    margin-top: 2rem;
+  }
+
+  .spend-item {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.9rem;
+    color: var(--cyan);
+    white-space: nowrap;
+  }
+
+  /* Pricing */
+  .pricing-section {
+    background: radial-gradient(ellipse at 50% 0%, rgba(0,229,255,0.1), transparent 60%);
+  }
+
+  .pricing-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 2rem;
+  }
+
+  .pricing-card {
+    background: var(--glass);
+    border: 1px solid var(--hairline);
+    border-radius: 20px;
+    padding: 2rem;
+    backdrop-filter: blur(12px);
+    transition: transform 0.3s ease;
+  }
+
+  .pricing-card:hover {
+    transform: translateY(-4px);
+  }
+
+  .pricing-card.recommended {
+    border-color: var(--cyan);
+    box-shadow: 0 0 30px var(--accent-glow);
+  }
+
+  .pricing-card h3 {
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .price {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 2rem;
+    color: var(--cyan);
+    margin-bottom: 1rem;
+  }
+
+  .pricing-card ul {
+    list-style: none;
+    margin-bottom: 2rem;
+  }
+
+  .pricing-card li {
+    padding: 0.5rem 0;
+    color: var(--text-secondary);
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+
+  .pricing-card .btn {
+    width: 100%;
+    text-align: center;
+  }
+
+  /* Code section */
+  .code-section {
+    background: var(--abyss);
+  }
+
+  .code-block {
+    background: #0a0f1c;
+    border: 1px solid var(--hairline);
+    border-radius: 12px;
+    padding: 2rem;
+    font-family: 'Courier New', monospace;
+    font-size: 0.9rem;
+    color: var(--text-primary);
+    box-shadow: 0 0 30px rgba(255,46,136,0.1);
+    overflow-x: auto;
+  }
+
+  .code-block .comment { color: var(--text-secondary); }
+  .code-block .keyword { color: var(--cyan); }
+  .code-block .string { color: var(--magenta); }
+
+  /* Final CTA */
+  .final-cta {
+    background:
+      radial-gradient(ellipse at 30% 30%, rgba(0,229,255,0.3), transparent 50%),
+      radial-gradient(ellipse at 70% 70%, rgba(255,46,136,0.3), transparent 50%),
+      var(--void);
+    text-align: center;
+  }
+
+  .final-cta h2 {
+    font-size: clamp(2rem, 4vw, 3rem);
+    margin-bottom: 1rem;
+  }
+
+  .final-cta p {
+    color: var(--text-secondary);
+    margin-bottom: 2rem;
+  }
+
+  /* Footer */
+  footer {
+    padding: 2rem 0;
+    border-top: 1px solid var(--hairline);
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+  }
+
+  /* Agent widget */
+  .aicom-agent {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    z-index: 99990;
+    font-family: 'Inter', sans-serif;
+  }
+
+  .agent-fab {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--cyan), var(--magenta));
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 0 20px var(--accent-glow);
+    transition: transform 0.3s ease;
+  }
+
+  .agent-fab:hover {
+    transform: scale(1.1);
+  }
+
+  .agent-fab svg {
+    width: 30px;
+    height: 30px;
+    fill: var(--void);
+  }
+
+  .agent-panel {
+    position: absolute;
+    bottom: 80px;
+    right: 0;
+    width: min(380px, calc(100vw - 2rem));
+    background: rgba(10, 15, 28, 0.95);
+    backdrop-filter: blur(16px);
+    border: 1px solid var(--hairline);
+    border-radius: 16px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+    display: none;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .agent-panel.open {
+    display: flex;
+  }
+
+  .agent-header {
+    padding: 1rem 1.5rem;
+    background: rgba(0,0,0,0.3);
+    border-bottom: 1px solid var(--hairline);
+  }
+
+  .agent-header h3 {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1rem;
+    color: var(--cyan);
+  }
+
+  .agent-header p {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+  }
+
+  .agent-messages {
+    padding: 1rem;
+    flex: 1;
+    overflow-y: auto;
+    max-height: 300px;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .agent-msg {
+    max-width: 80%;
+    padding: 0.7rem 1rem;
+    border-radius: 12px;
+    font-size: 0.9rem;
+    line-height: 1.4;
+  }
+
+  .agent-msg.bot {
+    background: var(--glass);
+    border: 1px solid var(--hairline);
+    align-self: flex-start;
+  }
+
+  .agent-msg.user {
+    background: linear-gradient(135deg, var(--cyan), var(--magenta));
+    color: var(--void);
+    align-self: flex-end;
+  }
+
+  .agent-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    padding: 0 1rem 1rem;
+  }
+
+  .agent-chip {
+    background: transparent;
+    border: 1px solid var(--hairline);
+    color: var(--text-primary);
+    padding: 0.4rem 0.8rem;
+    border-radius: 50px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: background 0.3s;
+  }
+
+  .agent-chip:hover {
+    background: rgba(255,255,255,0.1);
+  }
+
+  .agent-input-wrap {
+    display: flex;
+    gap: 0.5rem;
+    padding: 1rem;
+    border-top: 1px solid var(--hairline);
+  }
+
+  .agent-input {
+    flex: 1;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--hairline);
+    border-radius: 50px;
+    padding: 0.6rem 1rem;
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    outline: none;
+  }
+
+  .agent-send {
+    background: linear-gradient(135deg, var(--cyan), var(--magenta));
+    border: none;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .agent-send svg {
+    width: 20px;
+    height: 20px;
+    fill: var(--void);
+  }
+
+  .agent-close {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 1.5rem;
+    cursor: pointer;
+  }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .hero-inner {
+      grid-template-columns: 1fr;
+      padding: 2rem 1rem;
+    }
+
+    .hero-deco {
+      opacity: 0.5;
+    }
+
+    .topology-wrap {
+      grid-template-columns: 1fr;
+    }
+
+    .cta-group {
+      flex-direction: column;
+    }
+
+    .btn {
+      width: 100%;
+      text-align: center;
+    }
+  }
+
+  /* Animations */
+  @keyframes radar-spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
+  @keyframes node-pulse {
+    0%, 100% { opacity: 0.3; }
+    50% { opacity: 1; }
+  }
+
+  .radar-arc {
+    animation: radar-spin 20s linear infinite;
+    transform-origin: center;
+  }
+
+  .node {
+    animation: node-pulse 3s ease-in-out infinite;
+  }
+
+  .reveal {
+    opacity: 0;
+    transform: translateY(30px);
+    transition: opacity 0.6s ease, transform 0.6s ease;
+  }
+
+  .reveal.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .radar-arc, .node {
+      animation: none;
+    }
+
+    .reveal {
+      opacity: 1;
+      transform: none;
+      transition: none;
+    }
+  }
+</style>
+</head>
+<body>
+
+<!-- Hero -->
+<header class="hero" id="top">
+  <svg class="hero-deco" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+    <defs>
+      <radialGradient id="glow1" cx="30%" cy="30%" r="50%">
+        <stop offset="0%" stop-color="rgba(0,229,255,0.4)"/>
+        <stop offset="100%" stop-color="rgba(0,229,255,0)"/>
+      </radialGradient>
+      <radialGradient id="glow2" cx="70%" cy="70%" r="50%">
+        <stop offset="0%" stop-color="rgba(255,46,136,0.3)"/>
+        <stop offset="100%" stop-color="rgba(255,46,136,0)"/>
+      </radialGradient>
+      <filter id="blur">
+        <feGaussianBlur stdDeviation="20"/>
+      </filter>
+    </defs>
+    <rect width="1440" height="900" fill="url(#glow1)"/>
+    <rect width="1440" height="900" fill="url(#glow2)"/>
+    <g class="radar-arc">
+      <circle cx="1100" cy="450" r="200" fill="none" stroke="rgba(0,229,255,0.3)" stroke-width="1" stroke-dasharray="5 5"/>
+      <circle cx="1100" cy="450" r="300" fill="none" stroke="rgba(0,229,255,0.2)" stroke-width="1" stroke-dasharray="5 5"/>
+      <circle cx="1100" cy="450" r="400" fill="none" stroke="rgba(255,46,136,0.2)" stroke-width="1" stroke-dasharray="5 5"/>
+      <line x1="700" y1="450" x2="1500" y2="450" stroke="rgba(0,229,255,0.2)" stroke-width="1"/>
+      <line x1="1100" y1="50" x2="1100" y2="850" stroke="rgba(0,229,255,0.2)" stroke-width="1"/>
+      <line x1="800" y1="200" x2="1400" y2="700" stroke="rgba(255,46,136,0.2)" stroke-width="1"/>
+      <line x1="800" y1="700" x2="1400" y2="200" stroke="rgba(255,46,136,0.2)" stroke-width="1"/>
+    </g>
+    <g class="nodes">
+      <circle cx="1100" cy="450" r="6" fill="var(--cyan)" class="node" style="animation-delay:0s"/>
+      <circle cx="1200" cy="350" r="4" fill="var(--magenta)" class="node" style="animation-delay:0.5s"/>
+      <circle cx="950" cy="550" r="5" fill="var(--cyan)" class="node" style="animation-delay:1s"/>
+      <circle cx="1300" cy="550" r="3" fill="var(--magenta)" class="node" style="animation-delay:1.5s"/>
+      <circle cx="900" cy="350" r="4" fill="var(--cyan)" class="node" style="animation-delay:2s"/>
+      <circle cx="1150" cy="600" r="5" fill="var(--magenta)" class="node" style="animation-delay:2.5s"/>
+      <circle cx="1000" cy="300" r="3" fill="var(--cyan)" class="node" style="animation-delay:3s"/>
+      <circle cx="1250" cy="400" r="4" fill="var(--magenta)" class="node" style="animation-delay:3.5s"/>
+      <circle cx="1050" cy="500" r="5" fill="var(--cyan)" class="node" style="animation-delay:4s"/>
+      <circle cx="1350" cy="300" r="3" fill="var(--magenta)" class="node" style="animation-delay:4.5s"/>
+      <circle cx="850" cy="450" r="4" fill="var(--cyan)" class="node" style="animation-delay:5s"/>
+      <circle cx="1000" cy="650" r="5" fill="var(--magenta)" class="node" style="animation-delay:5.5s"/>
+    </g>
+  </svg>
+
+  <div class="hero-inner">
+    <div class="hero-copy">
+      <p class="eyebrow">AI Service Mesh Control Tower</p>
+      <h1>Command Your Autonomous Agent Fleet</h1>
+      <p class="hero-sub">Discover, verify, escrow, invoke, and settle — all in one zero-trust loop. Built for operators who need live topology, spend visibility, and USDT settlement without leaving the mesh.</p>
+      <div class="cta-group">
+        <a href="https://service-mesh.modelmarket.dev/" class="btn btn-primary">Open Live Dashboard</a>
+        <a href="#loop" class="btn btn-secondary">Explore the Loop</a>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- Loop Section -->
+<section class="loop-section" id="loop">
+  <div class="container">
+    <div class="section-header reveal">
+      <p class="eyebrow">The Loop</p>
+      <h2>From Discovery to Settlement</h2>
+      <p>Five steps. One autonomous pipeline. No blind spots.</p>
+    </div>
+    <div class="loop-grid">
+      <div class="loop-card reveal">
+        <div class="loop-step">01</div>
+        <h3>Discover</h3>
+        <p>Autonomous agents are discovered across your mesh in real time.</p>
+      </div>
+      <div class="loop-card reveal">
+        <div class="loop-step">02</div>
+        <h3>Verify</h3>
+        <p>Zero-trust verification ensures every agent is who it claims to be.</p>
+      </div>
+      <div class="loop-card reveal">
+        <div class="loop-step">03</div>
+        <h3>Escrow</h3>
+        <p>USDT funds are held in escrow until task completion is confirmed.</p>
+      </div>
+      <div class="loop-card reveal">
+        <div class="loop-step">04</div>
+        <h3>Invoke</h3>
+        <p>Execute tasks with full auditability and traceability.</p>
+      </div>
+      <div class="loop-card reveal">
+        <div class="loop-step">05</div>
+        <h3>Settle</h3>
+        <p>Automatic USDT settlement — fast, transparent, and final.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Topology Section -->
+<section class="topology-section" id="topology">
+  <div class="container">
+    <div class="section-header reveal">
+      <p class="eyebrow">Live Topology</p>
+      <h2>See Every Hop in Real Time</h2>
+      <p>Monitor agent connections, verification status, and spend as it happens.</p>
+    </div>
+    <div class="topology-wrap">
+      <div class="topology-svg reveal">
+        <svg viewBox="0 0 600 400" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="lineGrad" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stop-color="var(--cyan)"/>
+              <stop offset="100%" stop-color="var(--magenta)"/>
+            </linearGradient>
+          </defs>
+          <circle cx="300" cy="200" r="150" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+          <circle cx="300" cy="200" r="100" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+          <circle cx="300" cy="200" r="50" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+          <line x1="150" y1="200" x2="450" y2="200" stroke="url(#lineGrad)" stroke-width="2"/>
+          <line x1="300" y1="50" x2="300" y2="350" stroke="url(#lineGrad)" stroke-width="2"/>
+          <line x1="200" y1="100" x2="400" y2="300" stroke="url(#lineGrad)" stroke-width="2"/>
+          <line x1="200" y1="300" x2="400" y2="100" stroke="url(#lineGrad)" stroke-width="2"/>
+          <circle cx="300" cy="200" r="8" fill="var(--cyan)"/>
+          <circle cx="450" cy="200" r="6" fill="var(--magenta)"/>
+          <circle cx="150" cy="200" r="6" fill="var(--cyan)"/>
+          <circle cx="300" cy="50" r="6" fill="var(--magenta)"/>
+          <circle cx="300" cy="350" r="6" fill="var(--cyan)"/>
+          <circle cx="400" cy="300" r="6" fill="var(--magenta)"/>
+          <circle cx="200" cy="100" r="6" fill="var(--cyan)"/>
+        </svg>
+      </div>
+      <div class="topology-info reveal">
+        <h3>Zero-Trust Verification</h3>
+        <p>Every hop is cryptographically verified. No agent is trusted by default — only after attestation.</p>
+        <h3>Spend Control</h3>
+        <p>Set budgets, monitor USDT flow, and get alerts before costs spiral.</p>
+      </div>
+    </div>
+    <div class="spend-strip reveal">
+      <span class="spend-item">+$12,450.00 USDT</span>
+      <span class="spend-item">+$8,230.50 USDT</span>
+      <span class="spend-item">+$3,980.25 USDT</span>
+      <span class="spend-item">+$15,100.75 USDT</span>
+      <span class="spend-item">+$6,540.00 USDT</span>
+    </div>
+  </div>
+</section>
+
+<!-- Pricing Section -->
+<section class="pricing-section" id="pricing">
+  <div class="container">
+    <div class="section-header reveal">
+      <p class="eyebrow">Operator Pricing</p>
+      <h2>Plans That Scale With Your Fleet</h2>
+      <p>Start small, grow to sovereign. No hidden fees.</p>
+    </div>
+    <div class="pricing-grid">
+      <div class="pricing-card reveal">
+        <h3>Starter</h3>
+        <div class="price">$99<span style="font-size:1rem">/mo</span></div>
+        <ul>
+          <li>Up to 10 agents</li>
+          <li>Basic verification</li>
+          <li>USDT settlement</li>
+          <li>Email support</li>
+        </ul>
+        <a href="https://service-mesh.modelmarket.dev/" class="btn btn-secondary">Start Free Trial</a>
+      </div>
+      <div class="pricing-card recommended reveal">
+        <h3>Mesh</h3>
+        <div class="price">$499<span style="font-size:1rem">/mo</span></div>
+        <ul>
+          <li>Up to 100 agents</li>
+          <li>Zero-trust verification</li>
+          <li>Escrow + settlement</li>
+          <li>Priority support</li>
+          <li>Advanced analytics</li>
+        </ul>
+        <a href="https://service-mesh.modelmarket.dev/" class="btn btn-primary">Get Started</a>
+      </div>
+      <div class="pricing-card reveal">
+        <h3>Sovereign</h3>
+        <div class="price">Custom</div>
+        <ul>
+          <li>Unlimited agents</li>
+          <li>Dedicated infrastructure</li>
+          <li>Custom verification policies</li>
+          <li>24/7 support</li>
+        </ul>
+        <a href="https://service-mesh.modelmarket.dev/" class="btn btn-secondary">Contact Sales</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Code Section -->
+<section class="code-section" id="code">
+  <div class="container">
+    <div class="section-header reveal">
+      <p class="eyebrow">Developer Onboarding</p>
+      <h2>Register an Agent in Seconds</h2>
+      <p>One API call. Your agent is live in the mesh.</p>
+    </div>
+    <div class="code-block reveal">
+      <pre><code><span class="comment">// Register a new agent with the mesh</span>
+<span class="keyword">const</span> agent = <span class="keyword">await</span> mesh.register({
+  <span class="keyword">name</span>: <span class="string">"my-agent"</span>,
+  <span class="keyword">capabilities</span>: [<span class="string">"task-execution"</span>, <span class="string">"data-processing"</span>],
+  <span class="keyword">wallet</span>: <span class="string">"0x..."</span>,
+  <span class="keyword">policy</span>: <span class="string">"zero-trust"</span>
+});
+
+<span class="comment">// Agent is now discoverable and ready for invocation</span>
+console.log(agent.id);</code></pre>
+    </div>
+  </div>
+</section>
+
+<!-- Final CTA -->
+<section class="final-cta" id="cta">
+  <div class="container">
+    <h2 class="reveal">Ready to Take Control?</h2>
+    <p class="reveal">Open the live dashboard and see your mesh in action.</p>
+    <a href="https://service-mesh.modelmarket.dev/" class="btn btn-primary reveal">Open Live Dashboard</a>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer>
+  <div class="container">
+    <p>© 2025 AI Service Mesh Control Tower. All rights reserved.</p>
+  </div>
+</footer>
+
+<!-- AI Agent Widget -->
+<div class="aicom-agent" id="aicom-agent">
+  <div class="agent-panel" id="agentPanel" role="dialog" aria-label="AI Agent Assistant">
+    <button class="agent-close" id="agentClose" aria-label="Close chat">&times;</button>
+    <div class="agent-header">
+      <h3>Mesh Guide</h3>
+      <p>Your control tower assistant</p>
+    </div>
+    <div class="agent-messages" id="agentMessages">
+      <div class="agent-msg bot">Welcome to the AI Service Mesh Control Tower. How can I help you navigate autonomous discovery, escrow, or settlement?</div>
+    </div>
+    <div class="agent-chips" id="agentChips">
+      <button class="agent-chip" data-chip="How does zero-trust verification work?">Zero-trust verification</button>
+      <button class="agent-chip" data-chip="What are the pricing tiers?">Pricing tiers</button>
+      <button class="agent-chip" data-chip="How do I register an agent?">Register an agent</button>
+      <button class="agent-chip" data-chip="Open the live dashboard">Open dashboard</button>
+    </div>
+    <div class="agent-input-wrap">
+      <input type="text" class="agent-input" id="agentInput" placeholder="Type a message..." aria-label="Type a message">
+      <button class="agent-send" id="agentSend" aria-label="Send message">
+        <svg viewBox="0 0 24 24"><path d="M2 21l21-9L2 3v7l15 2-15 2v7z"/></svg>
+      </button>
+    </div>
+  </div>
+  <button class="agent-fab" id="agentFab" aria-expanded="false" aria-label="Open chat assistant">
+    <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H5.2L4 17.2V4h16v12z"/></svg>
+  </button>
+</div>
+
+<script>
+  // Agent widget logic
+  const fab = document.getElementById('agentFab');
+  const panel = document.getElementById('agentPanel');
+  const closeBtn = document.getElementById('agentClose');
+  const messages = document.getElementById('agentMessages');
+  const input = document.getElementById('agentInput');
+  const sendBtn = document.getElementById('agentSend');
+  const chips = document.querySelectorAll('.agent-chip');
+
+  function togglePanel(open) {
+    panel.classList.toggle('open', open);
+    fab.setAttribute('aria-expanded', open ? 'true' : 'false');
+    if (open) input.focus();
+  }
+
+  fab.addEventListener('click', () => togglePanel(!panel.classList.contains('open')));
+  closeBtn.addEventListener('click', () => togglePanel(false));
+
+  function addMessage(text, sender) {
+    const msg = document.createElement('div');
+    msg.className = 'agent-msg ' + sender;
+    msg.textContent = text;
+    messages.appendChild(msg);
+    messages.scrollTop = messages.scrollHeight;
+  }
+
+  function botReply(userText) {
+    const text = userText.toLowerCase();
+    let reply = "I can help with that. Could you be more specific about what you'd like to know?";
+    if (text.includes('verify') || text.includes('zero')) {
+      reply = "Zero-trust verification means no agent is trusted by default. Each agent must present cryptographic attestation before it can be invoked. This ensures only authenticated agents participate in your mesh.";
+    } else if (text.includes('pricing') || text.includes('tier') || text.includes('plan')) {
+      reply = "We offer three tiers: Starter at $99/mo for up to 10 agents, Mesh at $499/mo for up to 100 agents with escrow and advanced analytics, and Sovereign with custom pricing for unlimited agents and dedicated infrastructure.";
+    } else if (text.includes('register') || text.includes('agent')) {
+      reply = "To register an agent, use the mesh.register() API call with your agent's name, capabilities, wallet address, and policy. The code snippet in the Developer Onboarding section shows the exact syntax.";
+    } else if (text.includes('dashboard') || text.includes('open')) {
+      reply = "You can open the live dashboard by clicking the 'Open Live Dashboard' button anywhere on this page. It will take you to the full control tower interface.";
+    } else if (text.includes('escrow')) {
+      reply = "Escrow holds USDT funds until task completion is verified. This protects both parties and ensures settlement only happens when work is done correctly.";
+    } else if (text.includes('settle') || text.includes('settlement')) {
+      reply = "Settlement is automatic once task completion is confirmed. USDT is released from escrow directly to the agent's wallet, with full audit trails.";
+    }
+    return reply;
+  }
+
+  function handleUserMessage(text) {
+    if (!text.trim()) return;
+    addMessage(text, 'user');
+    input.value = '';
+    setTimeout(() => {
+      const reply = botReply(text);
+      addMessage(reply, 'bot');
+    }, 400 + Math.random() * 300);
+  }
+
+  sendBtn.addEventListener('click', () => handleUserMessage(input.value));
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') handleUserMessage(input.value);
+  });
+
+  chips.forEach(chip => {
+    chip.addEventListener('click', () => {
+      handleUserMessage(chip.dataset.chip);
+    });
+  });
+
+  // Scroll reveal
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+      }
+    });
+  }, { threshold: 0.1 });
+
+  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+</script>
+<a id="aifactory-powered-badge" href="https://magic-ai-factory.com/" target="_blank" rel="noopener noreferrer" style="position:fixed;bottom:0.625rem;right:5.85rem;z-index:999999;padding:8px 12px;background:linear-gradient(135deg,#4f46e5,#9333ea);color:#fff;border-radius:999px;font:600 12px system-ui,sans-serif;text-decoration:none;box-shadow:0 10px 25px rgba(79,70,229,.35);">Powered by AI-Factory</a>
+</body>
+</html>
