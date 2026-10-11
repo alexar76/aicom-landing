@@ -1,0 +1,21 @@
+# Secrets live in ./.env on the host — they persist across container recreate/restart.
+# Edit .env once, then: docker compose up -d --build
+services:
+  aicom-landing:
+    build: .
+    ports:
+      - "127.0.0.1:3847:3847"
+    env_file:
+      - .env
+    environment:
+      # .env may set 127.0.0.1 for local Node; inside Docker listen on all interfaces.
+      AICOM_LANDING_HOST: "0.0.0.0"
+      # Pinned to the published port: environment beats env_file, and a .env written for a
+      # local run (AICOM_LANDING_PORT=3851) otherwise moves the server off 3847 -> 502.
+      AICOM_LANDING_PORT: "3847"
+      # Where nginx mounts it (magic-ai-factory.com/landing-page-generation/). The page builds
+      # every fetch as BASE + "/api/..."; unset, they went to the site root and 404ed there,
+      # so the generator loaded no config or presets and could not generate. The server
+      # accepts the path with or without the prefix, so this is safe at a root mount too.
+      AICOM_LANDING_BASE_PATH: "${AICOM_LANDING_BASE_PATH:-/landing-page-generation}"
+    restart: unless-stopped
