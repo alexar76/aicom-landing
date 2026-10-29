@@ -1,10 +1,3 @@
-<!-- aicom-mirror-notice -->
-> **🔄 Synced from a monorepo — but with a live history.** `aicom-landing` mirrors the
-> canonical AI-Factory monorepo. History here is append-only (no force-push).
-> **Pull requests are welcome** — merged PRs are imported back into the monorepo
-> and re-synced here, so your contribution becomes canonical.
-> 💬 **[Issues](https://github.com/alexar76/aicom-landing/issues)** · **[Pull requests](https://github.com/alexar76/aicom-landing/pulls)** both welcome.
-
 # AI landing generator
 
 <!-- aicom-readme-badges -->
@@ -14,6 +7,9 @@
   <a href="https://github.com/alexar76/aicom-landing/blob/main/LICENSE"><img src="https://raw.githubusercontent.com/alexar76/aicom-landing/refs/heads/main/docs/badges/license.svg" alt="License: MIT" /></a>
 </p>
 <!-- /aicom-readme-badges -->
+
+<!-- aicom-mirror-notice -->
+> 🔄 Synced from the [AI-Factory monorepo](https://github.com/alexar76/aicom) (append-only history). **Pull requests are welcome** — merged PRs are imported back and re-synced here. [Issues](https://github.com/alexar76/aicom-landing/issues) · [Pull requests](https://github.com/alexar76/aicom-landing/pulls)
 
 > 🌐 **English** · [Русский](docs/README.ru.md) · [Español](docs/README.es.md) · [Français](docs/README.fr.md) · [中文](docs/README.zh.md) · [Glossary](https://github.com/alexar76/aicom/blob/main/docs/localization-glossary.md)
 
