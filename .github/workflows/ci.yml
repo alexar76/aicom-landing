@@ -24,4 +24,4 @@ jobs:
         run: node cli.mjs --help
 
       - name: Package version
-        run: test "$(node -p "require('./package.json').version")" = "0.1.1"
+        run: test "$(node -p "require('./package.json').version")" = "0.2.0"
